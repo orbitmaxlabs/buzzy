@@ -65,7 +65,6 @@ __snapshots__/
 coverage/
 
 # PWA assets (build only, not source)
-manifest.webmanifest
 firebase-messaging-sw.js.map
 
 # Miscellaneous
