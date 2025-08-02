@@ -1,34 +1,40 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="app">
+      <header className="app-header">
+        <h1>🐝 Buzzy</h1>
+        <p>Your go-to app for the latest buzz and updates</p>
+      </header>
+      
+      <main className="app-main">
+        <div className="card">
+          <h2>Welcome to Buzzy!</h2>
+          <p>This is a Progressive Web App built with React + Vite</p>
+          
+          <div className="feature-demo">
+            <button onClick={() => setCount((count) => count + 1)}>
+              Click count: {count}
+            </button>
+            <p>Try installing this app on your device!</p>
+          </div>
+        </div>
+        
+        <div className="pwa-info">
+          <h3>PWA Features:</h3>
+          <ul>
+            <li>✅ Installable on all devices</li>
+            <li>✅ Works offline</li>
+            <li>✅ Fast loading</li>
+            <li>✅ Native app experience</li>
+          </ul>
+        </div>
+      </main>
+    </div>
   )
 }
 

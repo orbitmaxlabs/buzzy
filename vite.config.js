@@ -8,12 +8,15 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Buzzy',
+        name: 'Buzzy - Adrit.gay',
         short_name: 'Buzzy',
         start_url: '/',
+        scope: '/',
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#3182ce',
+        description: 'Buzzy is your go-to app for the latest buzz and updates.',
+        orientation: 'portrait-primary',
         icons: [
           // windows11 icons
           { src: "windows11/SmallTile.scale-100.png", sizes: "71x71", type: "image/png" },
