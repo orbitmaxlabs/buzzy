@@ -2,10 +2,16 @@
   "name": "Buzzy - Adrit.gay",
   "short_name": "Buzzy",
   "description": "Buzzy is your go-to app for the latest buzz and updates.",
+  "id": "com.adrit.buzzy",
   "lang": "en-US",
   "dir": "ltr",
   "start_url": "/",
   "scope": "/",
+  "scope_extensions": [
+    {
+      "origin": "https://adrit.gay"
+    }
+  ],
   "display": "standalone",
   "display_override": ["standalone", "browser"],
   "orientation": "portrait-primary",
@@ -14,7 +20,12 @@
   "categories": ["social", "news", "entertainment"],
   "prefer_related_applications": false,
   "related_applications": [],
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+
   "protocol_handlers": [
     {
       "protocol": "web+buzzy",
