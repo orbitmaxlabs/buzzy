@@ -904,8 +904,8 @@ body {
 
 @media (max-width: 480px) {
   .top-bar {
-    padding: 0 12px;
-    height: 56px;
+    padding: 0 16px;
+    height: 66px;
   }
   
   .top-bar-left {
@@ -913,16 +913,16 @@ body {
   }
   
   .logo {
-    gap: 6px;
+    gap: 10px;
   }
   
   .logo-icon {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
   }
   
   .logo-text {
-    font-size: 16px;
+    font-size: 22px;
   }
   
   .top-bar-right {
@@ -930,8 +930,8 @@ body {
   }
   
   .icon {
-    width: 20px;
-    height: 20px;
+    width: 25px;
+    height: 25px;
   }
   
   .icon-btn {
