@@ -61,20 +61,38 @@ export const NotificationProvider = ({ children }) => {
   // Setup notifications for the current user
   const setupNotifications = async () => {
     try {
-      if (!user) return;
+      console.log('🎯 === NOTIFICATION SETUP DEBUG START ===');
+      console.log('Current user:', user?.uid, user?.email);
+      
+      if (!user) {
+        console.log('❌ No user found, skipping setup');
+        return;
+      }
 
+      console.log('Step 1: Getting notification token...');
       const notificationToken = await getNotificationToken();
+      console.log('✅ Token received:', notificationToken.substring(0, 20) + '...');
       setToken(notificationToken);
       
+      console.log('Step 2: Saving token to Firestore...');
       // Save token to Firestore
       await saveNotificationToken(user.uid, notificationToken);
+      console.log('✅ Token saved to Firestore');
       
+      console.log('Step 3: Loading existing notifications...');
       // Load existing notifications
       await loadNotifications();
+      console.log('✅ Existing notifications loaded');
       
+      console.log('Step 4: Setting up foreground message listener...');
       // Setup foreground message listener
       const unsubscribe = onForegroundMessage((payload) => {
-        console.log('Received foreground notification:', payload);
+        console.log('📨 === FOREGROUND MESSAGE RECEIVED ===');
+        console.log('Message payload:', payload);
+        console.log('Notification title:', payload.notification?.title);
+        console.log('Notification body:', payload.notification?.body);
+        console.log('Message data:', payload.data);
+        
         // Add the new notification to the list
         const newNotification = {
           id: Date.now().toString(),
@@ -84,13 +102,23 @@ export const NotificationProvider = ({ children }) => {
           read: false,
           createdAt: new Date()
         };
+        console.log('Adding notification to state:', newNotification);
         setNotifications(prev => [newNotification, ...prev]);
       });
 
+      console.log('✅ Foreground message listener set up');
+      console.log('🎯 === NOTIFICATION SETUP DEBUG END: SUCCESS ===');
+
       return unsubscribe;
     } catch (error) {
+      console.error('🎯 === NOTIFICATION SETUP DEBUG ERROR ===', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
       setError(error.message);
-      console.error('Error setting up notifications:', error);
     }
   };
 

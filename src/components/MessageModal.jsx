@@ -1,67 +1,76 @@
 import React, { useState, useEffect } from 'react';
-import { sendMessage, getMessages } from '../firebase';
+import { sendMessage } from '../firebase';
 import { sendMessageNotification } from '../utils/notificationUtils';
 import { useAuth } from '../contexts/AuthContext';
 
 const MessageModal = ({ friend, isOpen, onClose }) => {
   const { currentUser: authUser, userProfile } = useAuth();
-  const [messageText, setMessageText] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
 
-  // Load messages when modal opens
+  // Pre-written greeting message
+  const greetingMessage = "Hey! 👋 Just wanted to say hello and see how you're doing!";
+
   useEffect(() => {
     if (isOpen && friend && authUser) {
-      loadMessages();
+      // Automatically send greeting when modal opens
+      sendGreeting();
     }
   }, [isOpen, friend, authUser]);
 
-  const loadMessages = async () => {
-    try {
-      setLoading(true);
-      const messageList = await getMessages(authUser.uid, friend.uid);
-      setMessages(messageList);
-    } catch (error) {
-      console.error('Error loading messages:', error);
-    } finally {
-      setLoading(false);
+  const sendGreeting = async () => {
+    if (!authUser || !friend) {
+      setDebugInfo('ERROR: Missing authUser or friend data');
+      return;
     }
-  };
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!messageText.trim() || !authUser || !friend) return;
 
     try {
       setSending(true);
-      console.log('Sending message to friend:', friend.username, friend.uid);
+      setDebugInfo('Starting to send greeting...');
       
-      // Send the message
-      const messageResult = await sendMessage(authUser.uid, friend.uid, messageText.trim());
-      console.log('Message sent successfully:', messageResult);
+      console.log('=== GREETING DEBUG START ===');
+      console.log('Auth User:', authUser.uid, userProfile?.username);
+      console.log('Friend:', friend.uid, friend.username);
+      console.log('Greeting message:', greetingMessage);
       
-      // Send notification to the friend
-      console.log('Sending notification to friend...');
-      await sendMessageNotification(userProfile, friend.uid, messageText.trim());
-      console.log('Notification sent successfully');
+      // Step 1: Send the message to Firestore
+      setDebugInfo('Step 1: Sending message to Firestore...');
+      console.log('Step 1: Sending message to Firestore...');
       
-      // Clear input and reload messages
-      setMessageText('');
-      await loadMessages();
+      const messageResult = await sendMessage(authUser.uid, friend.uid, greetingMessage);
+      console.log('Message sent to Firestore:', messageResult);
+      setDebugInfo('Step 1: ✅ Message sent to Firestore');
+      
+      // Step 2: Send notification
+      setDebugInfo('Step 2: Sending push notification...');
+      console.log('Step 2: Sending push notification...');
+      
+      await sendMessageNotification(userProfile, friend.uid, greetingMessage);
+      console.log('Step 2: ✅ Push notification sent');
+      setDebugInfo('Step 2: ✅ Push notification sent');
+      
+      // Step 3: Success
+      setDebugInfo('✅ Greeting sent successfully!');
+      console.log('=== GREETING DEBUG END: SUCCESS ===');
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        onClose();
+        setSending(false);
+        setDebugInfo('');
+      }, 2000);
       
     } catch (error) {
-      console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
-    } finally {
-      setSending(false);
+      console.error('=== GREETING DEBUG ERROR ===', error);
+      setDebugInfo(`❌ ERROR: ${error.message}`);
+      
+      // Keep modal open for 3 seconds to show error
+      setTimeout(() => {
+        onClose();
+        setSending(false);
+        setDebugInfo('');
+      }, 3000);
     }
-  };
-
-  const formatTime = (date) => {
-    if (!date) return '';
-    const messageDate = date.toDate ? date.toDate() : new Date(date);
-    return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   if (!isOpen || !friend) return null;
@@ -77,75 +86,42 @@ const MessageModal = ({ friend, isOpen, onClose }) => {
             </div>
             <div className="message-modal-user-details">
               <h3 className="message-modal-username">{friend.username}</h3>
-              <p className="message-modal-status">Online</p>
+              <p className="message-modal-status">Sending greeting...</p>
             </div>
           </div>
-          <button className="message-modal-close" onClick={onClose}>
-            <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
         </div>
 
-        {/* Messages */}
+        {/* Content */}
         <div className="message-modal-content">
-          {loading ? (
-            <div className="message-loading">
-              <p>Loading messages...</p>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="message-empty">
-              <div className="message-empty-icon">
-                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          {sending ? (
+            <div className="greeting-sending">
+              <div className="loading-spinner">
+                <svg className="icon animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12a9 9 0 11-6.219-8.56"/>
                 </svg>
               </div>
-              <p>No messages yet</p>
-              <p className="message-empty-subtitle">Start the conversation!</p>
+              <h3>Sending Greeting to {friend.username}</h3>
+              <p className="greeting-message">{greetingMessage}</p>
+              
+              {/* Debug Info */}
+              <div className="debug-info">
+                <h4>Debug Info:</h4>
+                <pre>{debugInfo}</pre>
+              </div>
             </div>
           ) : (
-            <div className="message-list">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`message-item ${message.fromUid === authUser.uid ? 'message-sent' : 'message-received'}`}
-                >
-                  <div className="message-bubble">
-                    <p className="message-text">{message.message}</p>
-                    <span className="message-time">{formatTime(message.createdAt)}</span>
-                  </div>
-                </div>
-              ))}
+            <div className="greeting-success">
+              <div className="success-icon">
+                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22,4 12,14.01 9,11.01"></polyline>
+                </svg>
+              </div>
+              <h3>Greeting Sent! 🎉</h3>
+              <p>Your greeting has been sent to {friend.username}</p>
             </div>
           )}
         </div>
-
-        {/* Message Input */}
-        <form className="message-input-container" onSubmit={handleSendMessage}>
-          <input
-            type="text"
-            className="message-input"
-            placeholder="Type your message..."
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            disabled={sending}
-          />
-          <button
-            type="submit"
-            className="message-send-btn"
-            disabled={!messageText.trim() || sending}
-          >
-            {sending ? (
-              <svg className="icon animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12a9 9 0 11-6.219-8.56"/>
-              </svg>
-            ) : (
-              <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-              </svg>
-            )}
-          </button>
-        </form>
       </div>
     </div>
   );

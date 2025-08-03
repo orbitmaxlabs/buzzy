@@ -323,41 +323,78 @@ export const requestNotificationPermission = async () => {
 
 export const getNotificationToken = async () => {
   try {
-    console.log('Requesting notification permission...');
+    console.log('🔔 === NOTIFICATION TOKEN DEBUG START ===');
+    console.log('Step 1: Checking if messaging is supported...');
+    
+    if (!messaging) {
+      console.error('❌ Messaging not initialized');
+      throw new Error('Firebase messaging not initialized');
+    }
+    
+    console.log('Step 2: Requesting notification permission...');
     const permission = await requestNotificationPermission();
+    console.log('Permission result:', permission);
+    
     if (!permission) {
-      console.log('Notification permission denied');
+      console.log('❌ Notification permission denied');
       throw new Error('Notification permission denied');
     }
 
-    console.log('Getting notification token...');
+    console.log('Step 3: Getting notification token...');
+    console.log('VAPID Key being used:', 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM');
+    
     const token = await getToken(messaging, {
       vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM'
     });
 
     if (token) {
-      console.log('Notification token generated successfully:', token.substring(0, 20) + '...');
+      console.log('✅ Token generated successfully:', token.substring(0, 20) + '...');
+      console.log('Full token length:', token.length);
+      console.log('🔔 === NOTIFICATION TOKEN DEBUG END: SUCCESS ===');
       return token;
     } else {
-      console.log('No registration token available');
+      console.log('❌ No registration token available');
+      console.log('🔔 === NOTIFICATION TOKEN DEBUG END: FAILED ===');
       throw new Error('No registration token available');
     }
   } catch (error) {
-    console.error('Error getting notification token:', error);
+    console.error('🔔 === NOTIFICATION TOKEN DEBUG ERROR ===', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 };
 
 export const saveNotificationToken = async (uid, token) => {
   try {
+    console.log('💾 === SAVE TOKEN DEBUG START ===');
+    console.log('User UID:', uid);
+    console.log('Token (first 20 chars):', token.substring(0, 20) + '...');
+    
     const tokenRef = doc(db, 'notificationTokens', uid);
-    await setDoc(tokenRef, {
+    console.log('Token document reference:', tokenRef.path);
+    
+    const tokenData = {
       token,
       createdAt: new Date(),
       lastUsed: new Date()
-    });
+    };
+    
+    console.log('Token data to save:', tokenData);
+    
+    await setDoc(tokenRef, tokenData);
+    console.log('✅ Token saved successfully to Firestore');
+    console.log('💾 === SAVE TOKEN DEBUG END: SUCCESS ===');
   } catch (error) {
-    console.error('Error saving notification token:', error);
+    console.error('💾 === SAVE TOKEN DEBUG ERROR ===', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code
+    });
     throw error;
   }
 };
@@ -374,60 +411,98 @@ export const removeNotificationToken = async (uid) => {
 
 export const sendNotificationToUser = async (targetUid, notification) => {
   try {
-    console.log('Sending notification to user:', targetUid);
+    console.log('📱 === SEND NOTIFICATION DEBUG START ===');
+    console.log('Target User UID:', targetUid);
+    console.log('Notification data:', notification);
     
-    // Get the user's notification token
+    // Get the user's notification token from Firestore
+    console.log('Step 1: Getting notification token from Firestore...');
     const tokenRef = doc(db, 'notificationTokens', targetUid);
+    console.log('Token document path:', tokenRef.path);
+    
     const tokenSnap = await getDoc(tokenRef);
+    console.log('Token document exists:', tokenSnap.exists());
     
     if (!tokenSnap.exists()) {
-      console.log('User has no notification token:', targetUid);
+      console.log('❌ User has no notification token in Firestore');
+      console.log('📱 === SEND NOTIFICATION DEBUG END: NO TOKEN ===');
       throw new Error('User has no notification token');
     }
 
     const tokenData = tokenSnap.data();
-    console.log('Found notification token for user:', targetUid);
+    console.log('Token data retrieved:', {
+      token: tokenData.token ? tokenData.token.substring(0, 20) + '...' : 'null',
+      createdAt: tokenData.createdAt,
+      lastUsed: tokenData.lastUsed
+    });
+    
+    const token = tokenData.token;
+    if (!token) {
+      console.log('❌ Token is null or empty');
+      throw new Error('Token is null or empty');
+    }
     
     // Send notification via Firebase Functions
-    console.log('Calling Firebase Function to send notification...');
+    console.log('Step 2: Calling Firebase Function to send notification...');
+    console.log('Function URL: https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification');
+    
+    const requestBody = {
+      targetUid,
+      title: notification.title,
+      body: notification.body,
+      data: notification.data || {}
+    };
+    
+    console.log('Request body:', requestBody);
+    
     const response = await fetch('https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        targetUid,
-        title: notification.title,
-        body: notification.body,
-        data: notification.data || {}
-      })
+      body: JSON.stringify(requestBody)
     });
 
     console.log('Firebase Function response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Firebase Function error:', errorText);
+      console.error('❌ Firebase Function error response:', errorText);
+      console.log('📱 === SEND NOTIFICATION DEBUG END: FUNCTION ERROR ===');
       throw new Error(`Failed to send notification: ${response.status} ${errorText}`);
     }
 
     const result = await response.json();
-    console.log('Notification sent successfully:', result);
+    console.log('✅ Firebase Function success response:', result);
     
     // Also store it in Firestore for the user to see in-app
+    console.log('Step 3: Storing notification in Firestore...');
     const notificationRef = collection(db, 'notifications');
-    await addDoc(notificationRef, {
+    const notificationData = {
       targetUid,
       title: notification.title,
       body: notification.body,
       data: notification.data || {},
       read: false,
       createdAt: new Date()
-    });
+    };
+    
+    console.log('Notification data to store:', notificationData);
+    
+    await addDoc(notificationRef, notificationData);
+    console.log('✅ Notification stored in Firestore');
 
+    console.log('📱 === SEND NOTIFICATION DEBUG END: SUCCESS ===');
     return result;
   } catch (error) {
-    console.error('Error sending notification:', error);
+    console.error('📱 === SEND NOTIFICATION DEBUG ERROR ===', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
     throw error;
   }
 };

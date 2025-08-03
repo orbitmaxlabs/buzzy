@@ -2429,3 +2429,96 @@ body {
     max-width: 85%;
   }
 }
+
+/* Greeting Modal Styles */
+.greeting-sending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 20px;
+  color: #3b82f6;
+}
+
+.greeting-sending h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+.greeting-message {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0 0 24px 0;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.debug-info {
+  width: 100%;
+  max-width: 400px;
+  margin-top: 20px;
+  padding: 16px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+}
+
+.debug-info h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.debug-info pre {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Courier New', monospace;
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.greeting-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.success-icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 20px;
+  color: #10b981;
+}
+
+.greeting-success h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+
+.greeting-success p {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0;
+}
