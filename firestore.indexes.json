@@ -13,16 +13,6 @@
           "order": "ASCENDING"
         }
       ]
-    },
-    {
-      "collectionGroup": "friends",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "userUid",
-          "order": "ASCENDING"
-        }
-      ]
     }
   ],
   "fieldOverrides": []
