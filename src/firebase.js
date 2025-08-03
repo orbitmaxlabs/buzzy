@@ -341,11 +341,20 @@ export const getNotificationToken = async () => {
     }
 
     console.log('Step 3: Getting notification token...');
-    console.log('VAPID Key being used:', 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM');
     
-    const token = await getToken(messaging, {
-      vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM'
-    });
+    // Try without VAPID key first (for development)
+    let token;
+    try {
+      console.log('Attempting to get token without VAPID key...');
+      token = await getToken(messaging);
+    } catch (vapidError) {
+      console.log('VAPID key error, trying with VAPID key...');
+      console.log('VAPID Key being used:', 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM');
+      
+      token = await getToken(messaging, {
+        vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM'
+      });
+    }
 
     if (token) {
       console.log('✅ Token generated successfully:', token.substring(0, 20) + '...');

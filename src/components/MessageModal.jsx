@@ -62,14 +62,20 @@ const MessageModal = ({ friend, isOpen, onClose }) => {
       
     } catch (error) {
       console.error('=== GREETING DEBUG ERROR ===', error);
-      setDebugInfo(`❌ ERROR: ${error.message}`);
       
-      // Keep modal open for 3 seconds to show error
+      // Check if it's a notification token error
+      if (error.message.includes('no notification token') || error.message.includes('User has no notification token')) {
+        setDebugInfo(`⚠️ ${friend.username} hasn't enabled notifications yet. The message was sent, but they won't receive a push notification.`);
+      } else {
+        setDebugInfo(`❌ ERROR: ${error.message}`);
+      }
+      
+      // Keep modal open for 4 seconds to show error
       setTimeout(() => {
         onClose();
         setSending(false);
         setDebugInfo('');
-      }, 3000);
+      }, 4000);
     }
   };
 

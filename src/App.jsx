@@ -56,15 +56,69 @@ function App() {
 
   const initializeNotifications = async () => {
     try {
-      // Request notification permission if not already granted
-      if ('Notification' in window && Notification.permission === 'default') {
-        const permission = await Notification.requestPermission()
-        if (permission === 'granted') {
-          console.log('Notification permission granted')
+      console.log('🔔 === INITIALIZE NOTIFICATIONS DEBUG START ===');
+      console.log('Current notification permission:', Notification.permission);
+      console.log('User agent:', navigator.userAgent);
+      
+      // Check if service worker is registered
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.getRegistration();
+          console.log('Service Worker registration:', registration);
+          if (!registration) {
+            console.log('No service worker registered, registering now...');
+            await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            console.log('Service worker registered successfully');
+          }
+        } catch (swError) {
+          console.error('Service worker registration error:', swError);
         }
       }
+      
+      // Request notification permission if not already granted
+      if ('Notification' in window && Notification.permission === 'default') {
+        console.log('Requesting notification permission...');
+        const permission = await Notification.requestPermission()
+        console.log('Permission result:', permission);
+        
+        if (permission === 'granted') {
+          console.log('✅ Notification permission granted, getting token...');
+          
+          // Import the notification functions
+          const { getNotificationToken, saveNotificationToken } = await import('./firebase.js');
+          
+          try {
+            const token = await getNotificationToken();
+            console.log('✅ Token generated, saving to Firestore...');
+            await saveNotificationToken(authUser.uid, token);
+            console.log('✅ Token saved successfully');
+          } catch (tokenError) {
+            console.error('❌ Error getting/saving token:', tokenError);
+          }
+        } else {
+          console.log('❌ Notification permission denied');
+        }
+      } else if (Notification.permission === 'granted') {
+        console.log('✅ Permission already granted, checking if token exists...');
+        
+        // Import the notification functions
+        const { getNotificationToken, saveNotificationToken } = await import('./firebase.js');
+        
+        try {
+          const token = await getNotificationToken();
+          console.log('✅ Token generated, saving to Firestore...');
+          await saveNotificationToken(authUser.uid, token);
+          console.log('✅ Token saved successfully');
+        } catch (tokenError) {
+          console.error('❌ Error getting/saving token:', tokenError);
+        }
+      } else {
+        console.log('❌ Notification permission denied or not supported');
+      }
+      
+      console.log('🔔 === INITIALIZE NOTIFICATIONS DEBUG END ===');
     } catch (error) {
-      console.error('Error initializing notifications:', error)
+      console.error('🔔 === INITIALIZE NOTIFICATIONS DEBUG ERROR ===', error);
     }
   }
 
@@ -564,6 +618,42 @@ function App() {
       
       {/* Notification Test Component (for debugging) */}
       {authUser && <NotificationTest />}
+      
+      {/* Manual notification setup button */}
+      {authUser && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '20px',
+          background: 'white',
+          padding: '15px',
+          border: '1px solid #ccc',
+          borderRadius: '8px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          zIndex: 1000,
+          maxWidth: '250px'
+        }}>
+          <h5 style={{ margin: '0 0 10px 0' }}>🔔 Enable Notifications</h5>
+          <p style={{ margin: '0 0 10px 0', fontSize: '12px' }}>
+            Grant notification permission to receive greetings from friends
+          </p>
+          <button
+            onClick={initializeNotifications}
+            style={{
+              width: '100%',
+              padding: '8px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            Enable Notifications
+          </button>
+        </div>
+      )}
     </div>
   )
 }
