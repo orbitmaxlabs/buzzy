@@ -46,14 +46,7 @@ export default defineConfig({
         ],
         // Add offline fallback
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
-        // Add background sync
-        backgroundSync: {
-          name: 'buzzy-sync',
-          options: {
-            maxRetentionTime: 24 * 60 // 24 hours
-          }
-        }
+        navigateFallbackDenylist: [/^\/api\//]
       },
       manifest: {
         name: 'Buzzy - Connect with Friends',
