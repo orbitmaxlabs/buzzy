@@ -14,7 +14,7 @@ export default defineConfig({
         scope: '/',
         display: 'standalone',
         background_color: '#ffffff',
-        theme_color: '#3182ce',
+        theme_color: '#111111',
         description: 'Buzzy is your go-to app for the latest buzz and updates.',
         orientation: 'portrait-primary',
         icons: [
