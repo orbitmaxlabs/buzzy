@@ -76,3 +76,7 @@ yarn-debug*
 # NPM & Yarn
 .npm/
 .yarn-cache/
+
+# Firebase Service Account Key (NEVER commit this!)
+server/serviceAccountKey.json
+server/.env
