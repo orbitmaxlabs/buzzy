@@ -59,6 +59,8 @@ function App() {
       console.log('🔔 === INITIALIZE NOTIFICATIONS DEBUG START ===');
       console.log('Current notification permission:', Notification.permission);
       console.log('User agent:', navigator.userAgent);
+      console.log('Platform:', navigator.platform);
+      console.log('Is mobile:', /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
       
       // Check if service worker is registered
       if ('serviceWorker' in navigator) {
@@ -69,6 +71,9 @@ function App() {
             console.log('No service worker registered, registering now...');
             await navigator.serviceWorker.register('/firebase-messaging-sw.js');
             console.log('Service worker registered successfully');
+            
+            // Wait a bit for service worker to activate
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
         } catch (swError) {
           console.error('Service worker registration error:', swError);
@@ -82,7 +87,10 @@ function App() {
         console.log('Permission result:', permission);
         
         if (permission === 'granted') {
-          console.log('✅ Notification permission granted, getting token...');
+          console.log('✅ Notification permission granted, waiting before getting token...');
+          
+          // Wait a bit for permission to be fully processed
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           // Import the notification functions
           const { getNotificationToken, saveNotificationToken } = await import('./firebase.js');
@@ -651,6 +659,39 @@ function App() {
             }}
           >
             Enable Notifications
+          </button>
+          <button
+            onClick={async () => {
+              console.log('🔄 Force refreshing notification token...');
+              const { removeNotificationToken, getNotificationToken, saveNotificationToken } = await import('./firebase.js');
+              try {
+                // Remove existing token
+                await removeNotificationToken(authUser.uid);
+                console.log('✅ Old token removed');
+                
+                // Get new token
+                const newToken = await getNotificationToken();
+                await saveNotificationToken(authUser.uid, newToken);
+                console.log('✅ New token saved');
+                alert('Notification token refreshed successfully!');
+              } catch (error) {
+                console.error('❌ Error refreshing token:', error);
+                alert('Failed to refresh token: ' + error.message);
+              }
+            }}
+            style={{
+              width: '100%',
+              padding: '8px',
+              marginTop: '5px',
+              background: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            Refresh Token
           </button>
         </div>
       )}

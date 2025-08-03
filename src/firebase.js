@@ -325,6 +325,8 @@ export const getNotificationToken = async () => {
   try {
     console.log('🔔 === NOTIFICATION TOKEN DEBUG START ===');
     console.log('Step 1: Checking if messaging is supported...');
+    console.log('Platform:', navigator.platform);
+    console.log('User agent:', navigator.userAgent);
     
     if (!messaging) {
       console.error('❌ Messaging not initialized');
@@ -342,18 +344,52 @@ export const getNotificationToken = async () => {
 
     console.log('Step 3: Getting notification token...');
     
-    // Try without VAPID key first (for development)
+    // Wait a bit for permission to be fully processed
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Try multiple approaches for token generation
     let token;
+    let lastError;
+    
+    // Method 1: Try without VAPID key
     try {
-      console.log('Attempting to get token without VAPID key...');
+      console.log('Method 1: Attempting to get token without VAPID key...');
       token = await getToken(messaging);
-    } catch (vapidError) {
-      console.log('VAPID key error, trying with VAPID key...');
-      console.log('VAPID Key being used:', 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM');
-      
-      token = await getToken(messaging, {
-        vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM'
-      });
+      console.log('✅ Method 1 succeeded');
+    } catch (error1) {
+      console.log('❌ Method 1 failed:', error1.message);
+      lastError = error1;
+    }
+    
+    // Method 2: Try with VAPID key
+    if (!token) {
+      try {
+        console.log('Method 2: Attempting to get token with VAPID key...');
+        console.log('VAPID Key being used:', 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM');
+        
+        token = await getToken(messaging, {
+          vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM'
+        });
+        console.log('✅ Method 2 succeeded');
+      } catch (error2) {
+        console.log('❌ Method 2 failed:', error2.message);
+        lastError = error2;
+      }
+    }
+    
+    // Method 3: Try with different service worker scope
+    if (!token) {
+      try {
+        console.log('Method 3: Attempting to get token with different service worker scope...');
+        token = await getToken(messaging, {
+          vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
+          serviceWorkerRegistration: await navigator.serviceWorker.getRegistration()
+        });
+        console.log('✅ Method 3 succeeded');
+      } catch (error3) {
+        console.log('❌ Method 3 failed:', error3.message);
+        lastError = error3;
+      }
     }
 
     if (token) {
@@ -362,9 +398,10 @@ export const getNotificationToken = async () => {
       console.log('🔔 === NOTIFICATION TOKEN DEBUG END: SUCCESS ===');
       return token;
     } else {
-      console.log('❌ No registration token available');
+      console.log('❌ All methods failed to generate token');
+      console.log('Last error:', lastError);
       console.log('🔔 === NOTIFICATION TOKEN DEBUG END: FAILED ===');
-      throw new Error('No registration token available');
+      throw new Error(`No registration token available: ${lastError?.message || 'Unknown error'}`);
     }
   } catch (error) {
     console.error('🔔 === NOTIFICATION TOKEN DEBUG ERROR ===', error);

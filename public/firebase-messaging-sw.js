@@ -21,6 +21,8 @@ const messaging = firebase.messaging();
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log('Background message received:', payload);
+  console.log('User agent:', navigator.userAgent);
+  console.log('Platform:', navigator.platform);
 
   const notificationTitle = payload.notification?.title || 'New Notification';
   const notificationOptions = {
@@ -29,6 +31,8 @@ messaging.onBackgroundMessage((payload) => {
     badge: '/android/android-launchericon-48-48.png',
     data: payload.data || {},
     requireInteraction: true,
+    tag: 'buzzy-notification', // Prevent duplicate notifications
+    renotify: true,
     actions: [
       {
         action: 'open',
