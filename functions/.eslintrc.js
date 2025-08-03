@@ -5,12 +5,12 @@ module.exports = {
   },
   parserOptions: {
     ecmaVersion: 2021,
-    sourceType: "script",
+    sourceType: "script", // CommonJS modules in Node.js
   },
   extends: [
     "eslint:recommended",
     "google",
-    "plugin:node/recommended"
+    "plugin:node/recommended",
   ],
   rules: {
     "no-restricted-globals": ["error", "name", "length"],
@@ -27,6 +27,6 @@ module.exports = {
     },
   ],
   globals: {
-    // Add any custom globals here if needed
+    // Define any custom global variables here, if needed
   },
 };
