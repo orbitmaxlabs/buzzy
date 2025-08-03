@@ -1,10 +1,11 @@
 module.exports = {
   env: {
-    es6: true,
     node: true,
+    es2021: true,
   },
   parserOptions: {
-    "ecmaVersion": 2018,
+    ecmaVersion: 2018,
+    sourceType: "script",
   },
   extends: [
     "eslint:recommended",
@@ -13,7 +14,7 @@ module.exports = {
   rules: {
     "no-restricted-globals": ["error", "name", "length"],
     "prefer-arrow-callback": "error",
-    "quotes": ["error", "double", {"allowTemplateLiterals": true}],
+    "quotes": ["error", "double", { "allowTemplateLiterals": true }],
   },
   overrides: [
     {
