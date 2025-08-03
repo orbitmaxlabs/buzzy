@@ -28,5 +28,8 @@ module.exports = {
   ],
   globals: {
     // Define any custom global variables here, if needed
+    module: "readonly",
+  require: "readonly",
+  exports: "readonly",
   },
 };
