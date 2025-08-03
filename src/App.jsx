@@ -10,7 +10,7 @@ function App() {
   const [friends, setFriends] = useState([
     {
       id: 1,
-      name: "Alex Johnson",
+      name: "Arjun Bishnoi",
       avatar: "👨‍💻",
       status: "online",
       lastActive: "2 min ago",
@@ -129,8 +129,8 @@ function App() {
     
     // Send notification
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(`Message Sent to ${friend.name}`, {
-        body: `Your message has been sent successfully to ${friend.name}`,
+      new Notification(`${friend.name}`, {
+        body: `Bhen ke lund thigge madarchod!`,
         icon: '/windows11/Square44x44Logo.scale-100.png'
       })
     } else if ('Notification' in window && Notification.permission !== 'denied') {
