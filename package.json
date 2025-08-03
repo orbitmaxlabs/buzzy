@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist --repo=https://github.com/orbitmaxlabs/buzzy.git"
+    "deploy": "firebase deploy"
   },
   "dependencies": {
     "react": "^19.1.0",
