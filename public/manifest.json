@@ -13,7 +13,7 @@
     }
   ],
   "display": "standalone",
-  "display_override": ["standalone", "browser"],
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#3182ce",
@@ -24,6 +24,49 @@
   
   "launch_handler": {
     "client_mode": "navigate-existing"
+  },
+
+  "handle_links": "preferred",
+
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+
+  "widgets": [
+    {
+      "name": "Latest Buzz Widget",
+      "short_name": "Buzz Widget",
+      "description": "Shows the latest buzz updates",
+      "ms_ac_template": "widgets/latest-buzz.json",
+      "data": "widgets/latest-buzz-data.json",
+      "auth": false,
+      "screenshots": [
+        {
+          "src": "widgets/latest-buzz-screenshot.png",
+          "sizes": "400x200",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+
+  "background_sync": [
+    {
+      "name": "sync-buzz-data",
+      "description": "Syncs buzz data when connection is restored"
+    }
+  ],
+
+  "periodic_sync": [
+    {
+      "name": "update-buzz-content",
+      "description": "Updates buzz content in the background",
+      "period": 3600
+    }
+  ],
+
+  "push": {
+    "description": "Receive notifications about new buzz updates"
   },
 
   "protocol_handlers": [
