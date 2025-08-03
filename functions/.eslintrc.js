@@ -4,12 +4,13 @@ module.exports = {
     es2021: true,
   },
   parserOptions: {
-    ecmaVersion: 2018,
+    ecmaVersion: 2021,
     sourceType: "script",
   },
   extends: [
     "eslint:recommended",
     "google",
+    "plugin:node/recommended"
   ],
   rules: {
     "no-restricted-globals": ["error", "name", "length"],
@@ -25,5 +26,7 @@ module.exports = {
       rules: {},
     },
   ],
-  globals: {},
+  globals: {
+    // Add any custom globals here if needed
+  },
 };
