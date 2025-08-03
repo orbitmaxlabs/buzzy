@@ -327,53 +327,89 @@ export const getNotificationToken = async () => {
     console.log('Step 1: Checking if messaging is supported...');
     console.log('Platform:', navigator.platform);
     console.log('User agent:', navigator.userAgent);
+    console.log('Is mobile:', /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    console.log('Current URL:', window.location.href);
+    console.log('Is localhost:', window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    
+    // Check if we're in development/localhost
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
     if (!messaging) {
       console.error('❌ Messaging not initialized');
       throw new Error('Firebase messaging not initialized');
     }
     
-    console.log('Step 2: Requesting notification permission...');
-    const permission = await requestNotificationPermission();
-    console.log('Permission result:', permission);
-    
-    if (!permission) {
-      console.log('❌ Notification permission denied');
-      throw new Error('Notification permission denied');
+    console.log('Step 2: Checking notification permission...');
+    if (!('Notification' in window)) {
+      throw new Error('Notifications are not supported in this browser');
     }
+    
+    if (Notification.permission === 'denied') {
+      throw new Error('Notification permission is denied. Please enable notifications in your browser settings.');
+    }
+    
+    if (Notification.permission === 'default') {
+      console.log('Requesting notification permission...');
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        throw new Error('Notification permission denied by user');
+      }
+    }
+    
+    console.log('✅ Notification permission granted');
 
-    console.log('Step 3: Checking service worker registration...');
+    console.log('Step 3: Ensuring service worker is registered...');
     
     // Ensure service worker is registered
     if ('serviceWorker' in navigator) {
       try {
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-          scope: '/'
-        });
+        // First, try to get existing registration
+        let registration = await navigator.serviceWorker.getRegistration();
+        
+        if (!registration) {
+          console.log('No existing service worker, registering new one...');
+          registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/'
+          });
+        }
+        
         console.log('✅ Service worker registered:', registration);
         
         // Wait for service worker to be ready
         await navigator.serviceWorker.ready;
         console.log('✅ Service worker is ready');
+        
+        // Wait a bit for everything to settle
+        await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (swError) {
-        console.log('⚠️ Service worker registration failed, trying alternative approach:', swError);
+        console.error('❌ Service worker registration failed:', swError);
+        throw new Error('Failed to register service worker for notifications');
       }
+    } else {
+      throw new Error('Service workers are not supported in this browser');
     }
 
     console.log('Step 4: Getting notification token...');
     
-    // Wait a bit for permission to be fully processed
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // If we're on localhost, return a mock token for development
+    if (isLocalhost) {
+      console.log('🔄 Development environment detected (localhost)');
+      console.log('⚠️ Firebase Cloud Messaging requires HTTPS in production');
+      console.log('📝 Returning mock token for development testing');
+      
+      const mockToken = 'mock-dev-token-' + Date.now();
+      console.log('✅ Mock token generated for development:', mockToken);
+      console.log('🔔 === NOTIFICATION TOKEN DEBUG END: SUCCESS (DEV) ===');
+      return mockToken;
+    }
     
-    // Try multiple approaches for token generation
+    // Try multiple approaches for token generation (production only)
     let token;
     let lastError;
     
     // Method 1: Try with VAPID key and service worker
     try {
       console.log('Method 1: Attempting to get token with VAPID key and service worker...');
-      console.log('VAPID Key being used:', 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM');
-      
       const registration = await navigator.serviceWorker.getRegistration();
       token = await getToken(messaging, {
         vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
@@ -438,6 +474,15 @@ export const saveNotificationToken = async (uid, token) => {
     console.log('💾 === SAVE TOKEN DEBUG START ===');
     console.log('User UID:', uid);
     console.log('Token (first 20 chars):', token.substring(0, 20) + '...');
+    console.log('Is mock token:', token.startsWith('mock-dev-token-'));
+    
+    // If it's a mock token in development, just log it and return
+    if (token.startsWith('mock-dev-token-')) {
+      console.log('🔄 Development mode: Mock token detected');
+      console.log('📝 Skipping Firestore save for mock token');
+      console.log('💾 === SAVE TOKEN DEBUG END: SUCCESS (DEV) ===');
+      return;
+    }
     
     const tokenRef = doc(db, 'notificationTokens', uid);
     console.log('Token document reference:', tokenRef.path);
@@ -507,6 +552,14 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       throw new Error('Token is null or empty');
     }
     
+    // Check if it's a mock token in development
+    if (token.startsWith('mock-dev-token-')) {
+      console.log('🔄 Development mode: Mock token detected');
+      console.log('📝 Skipping Firebase Function call for mock token');
+      console.log('📱 === SEND NOTIFICATION DEBUG END: SUCCESS (DEV) ===');
+      return { success: true, message: 'Mock notification sent in development' };
+    }
+    
     // Send notification via Firebase Functions
     console.log('Step 2: Calling Firebase Function to send notification...');
     console.log('Function URL: https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification');
@@ -551,7 +604,6 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     console.error('Error details:', {
       name: error.name,
       message: error.message,
-      code: error.code,
       stack: error.stack
     });
     throw error;

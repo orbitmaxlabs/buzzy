@@ -20,19 +20,82 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
               }
             }
+          },
+          {
+            urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'firestore-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 // 1 day
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/firebase\.googleapis\.com\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'firebase-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 // 1 day
+              }
+            }
           }
-        ]
+        ],
+        // Add offline fallback
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
+        // Add background sync
+        backgroundSync: {
+          name: 'buzzy-sync',
+          options: {
+            maxRetentionTime: 24 * 60 // 24 hours
+          }
+        }
       },
       manifest: {
-        name: 'Buzzy - Adrit.gay',
+        name: 'Buzzy - Connect with Friends',
         short_name: 'Buzzy',
         start_url: '/',
         scope: '/',
         display: 'standalone',
         background_color: '#000000',
         theme_color: '#ffffff',
-        description: 'Buzzy is your go-to app for the latest buzz and updates.',
+        description: 'Buzzy is your go-to app for connecting with friends and staying in the loop with real-time notifications.',
         orientation: 'portrait-primary',
+        categories: ['social', 'communication', 'lifestyle'],
+        lang: 'en',
+        dir: 'ltr',
+        prefer_related_applications: false,
+        related_applications: [],
+        shortcuts: [
+          {
+            name: 'Add Friends',
+            short_name: 'Add Friends',
+            description: 'Add new friends to your network',
+            url: '/?action=add-friends',
+            icons: [
+              {
+                src: 'windows11/Square44x44Logo.scale-100.png',
+                sizes: '44x44'
+              }
+            ]
+          },
+          {
+            name: 'View Profile',
+            short_name: 'Profile',
+            description: 'View and edit your profile',
+            url: '/?action=profile',
+            icons: [
+              {
+                src: 'windows11/Square44x44Logo.scale-100.png',
+                sizes: '44x44'
+              }
+            ]
+          }
+        ],
         icons: [
           { src: "windows11/SmallTile.scale-100.png", sizes: "71x71", type: "image/png" },
           { src: "windows11/SmallTile.scale-125.png", sizes: "89x89", type: "image/png" },

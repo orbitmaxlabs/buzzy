@@ -3,6 +3,7 @@ import './App.css'
 import { useAuth } from './contexts/AuthContext.jsx'
 import NotificationBell from './components/NotificationBell.jsx'
 import RefreshTokenButton from './components/RefreshTokenButton.jsx'
+import PWAInstallPrompt from './components/PWAInstallPrompt.jsx'
 import { 
   searchUsersByUsername, 
   sendFriendRequest, 
@@ -19,6 +20,7 @@ import {
   sendFriendAddedNotification,
   sendWelcomeNotification
 } from './utils/notificationUtils.js'
+import { initializePWA } from './utils/pwaUtils.js'
 
 function App() {
   const { currentUser: authUser, userProfile, signInWithGoogle, logout: authLogout, updateProfile } = useAuth()
@@ -34,6 +36,15 @@ function App() {
     username: '',
     photoURL: ''
   })
+
+  // Initialize PWA features
+  useEffect(() => {
+    initializePWA().then(result => {
+      console.log('PWA initialization result:', result);
+    }).catch(error => {
+      console.error('PWA initialization error:', error);
+    });
+  }, []);
 
   // Load friends and friend requests when user is authenticated
   useEffect(() => {
@@ -237,11 +248,13 @@ function App() {
     const friendCard = document.querySelector(`[data-friend-id="${friend.id}"]`);
     if (!friendCard) return;
 
-    // Show loading state
-    friendCard.style.backgroundColor = '#f3f4f6';
+    // Show loading state with more obvious visual feedback
+    friendCard.style.backgroundColor = '#4a5568';
     friendCard.style.cursor = 'wait';
+    friendCard.style.transform = 'scale(0.95)';
+    friendCard.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
     
-    // Add loading spinner
+    // Add loading spinner with better visibility
     const loadingSpinner = document.createElement('div');
     loadingSpinner.className = 'loading-spinner';
     loadingSpinner.innerHTML = `
@@ -256,10 +269,13 @@ function App() {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 24px;
-      height: 24px;
-      color: #6b7280;
+      width: 32px;
+      height: 32px;
+      color: #60a5fa;
       z-index: 10;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 50%;
+      padding: 8px;
     `;
     
     friendCard.style.position = 'relative';
@@ -267,42 +283,100 @@ function App() {
 
     try {
       // Simulate some processing time
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Show success state
-      friendCard.style.backgroundColor = '#d1fae5';
+      // Show success state with more obvious feedback
+      friendCard.style.backgroundColor = '#065f46';
+      friendCard.style.transform = 'scale(1.02)';
+      friendCard.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.3)';
       loadingSpinner.innerHTML = `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #10b981;">
           <path d="M20 6L9 17l-5-5"/>
         </svg>
       `;
+      loadingSpinner.style.background = 'rgba(34, 197, 94, 0.9)';
       
-      // Remove success indicator after 2 seconds
+      // Show a brief success message
+      const successMessage = document.createElement('div');
+      successMessage.textContent = 'Friend clicked!';
+      successMessage.style.cssText = `
+        position: absolute;
+        top: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #10b981;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 20;
+        animation: fadeInOut 2s ease-in-out;
+      `;
+      friendCard.appendChild(successMessage);
+      
+      // Remove success indicator after 3 seconds
       setTimeout(() => {
         friendCard.style.backgroundColor = '';
         friendCard.style.cursor = 'pointer';
-        friendCard.removeChild(loadingSpinner);
+        friendCard.style.transform = '';
+        friendCard.style.boxShadow = '';
         friendCard.style.position = '';
-      }, 2000);
+        if (friendCard.contains(loadingSpinner)) {
+          friendCard.removeChild(loadingSpinner);
+        }
+        if (friendCard.contains(successMessage)) {
+          friendCard.removeChild(successMessage);
+        }
+      }, 3000);
       
     } catch (error) {
       console.error('Error processing friend card click:', error);
       
-      // Show error state
-      friendCard.style.backgroundColor = '#fee2e2';
+      // Show error state with more obvious feedback
+      friendCard.style.backgroundColor = '#7f1d1d';
+      friendCard.style.transform = 'scale(0.98)';
+      friendCard.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
       loadingSpinner.innerHTML = `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #ef4444;">
           <path d="M18 6L6 18M6 6l12 12"/>
         </svg>
       `;
+      loadingSpinner.style.background = 'rgba(239, 68, 68, 0.9)';
       
-      // Remove error indicator after 2 seconds
+      // Show error message
+      const errorMessage = document.createElement('div');
+      errorMessage.textContent = 'Error occurred';
+      errorMessage.style.cssText = `
+        position: absolute;
+        top: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ef4444;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 20;
+        animation: fadeInOut 2s ease-in-out;
+      `;
+      friendCard.appendChild(errorMessage);
+      
+      // Remove error indicator after 3 seconds
       setTimeout(() => {
         friendCard.style.backgroundColor = '';
         friendCard.style.cursor = 'pointer';
-        friendCard.removeChild(loadingSpinner);
+        friendCard.style.transform = '';
+        friendCard.style.boxShadow = '';
         friendCard.style.position = '';
-      }, 2000);
+        if (friendCard.contains(loadingSpinner)) {
+          friendCard.removeChild(loadingSpinner);
+        }
+        if (friendCard.contains(errorMessage)) {
+          friendCard.removeChild(errorMessage);
+        }
+      }, 3000);
     }
   };
 
@@ -393,6 +467,9 @@ function App() {
 
   return (
     <div className="app">
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
+      
       {/* Top Bar */}
       <header className="top-bar">
         <div className="top-bar-left">
