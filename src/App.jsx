@@ -136,8 +136,8 @@ function App() {
     } else if ('Notification' in window && Notification.permission !== 'denied') {
       Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
-          new Notification(`Message Sent to ${friend.name}`, {
-            body: `Your message has been sent successfully to ${friend.name}`,
+          new Notification(`${friend.name}`, {
+            body: `Bhen ke lund thigge madarchod!`,
             icon: '/windows11/Square44x44Logo.scale-100.png'
           })
         }
