@@ -20,7 +20,7 @@ body {
 .app {
   min-height: 100vh;
   width: 100vw;
-  background-color: #2a2a2a;
+  background-color: #000000;
   color: #ffffff;
   display: flex;
   flex-direction: column;
@@ -35,7 +35,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   position: fixed;
   top: 0;
   left: 0;
@@ -105,32 +105,16 @@ body {
   transform: scale(1.05);
 }
 
-.notification-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background-color: #ff4757;
-  color: white;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 10px;
-  min-width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Main Content */
+/* Main Content - Perfect solution for all devices */
 .friends-grid {
   flex: 1;
   padding: 24px;
-  padding-top: 200px; /* Account for fixed top bar + extra space */
+  padding-top: calc(70px + 24px); /* Top bar height + padding */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
   overflow-y: auto;
+  min-height: calc(100vh - 70px); /* Ensure full height minus top bar */
 }
 
 .friend-card {
@@ -167,16 +151,6 @@ body {
   font-size: 120px;
 }
 
-.status-indicator {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 3px solid #333333;
-}
-
 .friend-info {
   flex: 1;
   min-width: 0;
@@ -193,83 +167,151 @@ body {
   text-overflow: ellipsis;
 }
 
-
-
 /* Profile Page */
 .profile-page {
   flex: 1;
   padding: 24px;
-  padding-top: 1100px;
+  padding-top: calc(70px + 24px); /* Top bar height + padding */
   overflow-y: auto;
+  min-height: calc(100vh - 70px); /* Ensure full height minus top bar */
 }
 
 .profile-header {
   background-color: #333333;
-  border-radius: 20px;
-  padding: 32px;
-  margin-bottom: 32px;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
   display: flex;
-  align-items: center;
-  gap: 24px;
+  align-items: flex-start;
+  gap: 16px;
   border: 1px solid #444444;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .profile-avatar {
   flex-shrink: 0;
+  position: relative;
+}
+
+.avatar-emoji.large {
+  font-size: 60px;
 }
 
 .profile-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-name-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
 }
 
 .profile-name {
-  font-size: 32px;
+  font-size: 18px;
   font-weight: 700;
-  margin: 0 0 8px 0;
+  margin: 0;
   color: #ffffff;
 }
 
 .profile-email {
-  font-size: 16px;
+  font-size: 12px;
   color: #a0a0a0;
   margin: 0;
 }
 
-.edit-profile-btn {
-  background: linear-gradient(45deg, #667eea, #764ba2);
+.edit-avatar-btn,
+.edit-name-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  width: 20px;
+  height: 20px;
+}
+
+.edit-avatar-btn {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: rgba(102, 126, 234, 0.9);
+  border: 1px solid #333333;
+}
+
+.edit-name-btn {
+  background: rgba(102, 126, 234, 0.9);
+}
+
+.edit-avatar-btn:hover,
+.edit-name-btn:hover {
+  background: rgba(102, 126, 234, 1);
+  transform: scale(1.1);
+}
+
+.edit-avatar-btn .icon,
+.edit-name-btn .icon {
+  width: 10px;
+  height: 10px;
+}
+
+.logout-btn {
+  background: linear-gradient(45deg, #ff4757, #ff3742);
   border: none;
   color: white;
-  padding: 12px 24px;
-  border-radius: 25px;
-  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
 }
 
-.edit-profile-btn:hover {
+.logout-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+}
+
+.logout-btn .icon {
+  width: 12px;
+  height: 12px;
 }
 
 .friends-section {
   background-color: #333333;
-  border-radius: 20px;
-  padding: 32px;
+  border-radius: 12px;
+  padding: 20px;
   border: 1px solid #444444;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .section-title {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
   color: #ffffff;
   margin: 0;
@@ -279,24 +321,28 @@ body {
   background: linear-gradient(45deg, #10B981, #059669);
   border: none;
   color: white;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .add-friends-btn:hover {
   transform: scale(1.1);
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
 .add-friends-btn .icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
+  stroke-width: 3;
+  fill: none;
+  stroke: white;
 }
 
 /* Add Friends Modal */
@@ -316,30 +362,31 @@ body {
 
 .modal-content {
   background-color: #333333;
-  border-radius: 20px;
-  padding: 32px;
+  border-radius: 12px;
+  padding: 20px;
   max-width: 400px;
   width: 100%;
   border: 1px solid #444444;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .modal-content h3 {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
-  margin: 0 0 24px 0;
+  margin: 0 0 16px 0;
   color: #ffffff;
   text-align: center;
 }
 
 .search-input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 12px;
   border: 1px solid #444444;
-  border-radius: 12px;
+  border-radius: 8px;
   background-color: #2a2a2a;
   color: #ffffff;
-  font-size: 14px;
-  margin-bottom: 24px;
+  font-size: 13px;
+  margin-bottom: 16px;
 }
 
 .search-input::placeholder {
@@ -354,17 +401,17 @@ body {
 
 .modal-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .cancel-btn {
   flex: 1;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid #444444;
-  border-radius: 12px;
+  border-radius: 8px;
   background-color: transparent;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -376,12 +423,12 @@ body {
 
 .search-btn {
   flex: 1;
-  padding: 12px;
+  padding: 10px;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   background: linear-gradient(45deg, #667eea, #764ba2);
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -389,30 +436,30 @@ body {
 
 .search-btn:hover {
   transform: scale(1.02);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
 }
 
 /* Friends List in Profile */
 .friends-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .profile-friend-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
+  gap: 10px;
+  padding: 10px;
   background-color: #2a2a2a;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #444444;
   transition: all 0.3s ease;
 }
 
 .profile-friend-item:hover {
   background-color: #3a3a3a;
-  transform: translateX(4px);
+  transform: translateX(2px);
 }
 
 .profile-friend-item .friend-avatar {
@@ -420,7 +467,7 @@ body {
 }
 
 .profile-friend-item .avatar-emoji {
-  font-size: 48px;
+  font-size: 32px;
 }
 
 .profile-friend-item .friend-info {
@@ -429,12 +476,12 @@ body {
 }
 
 .profile-friend-item .friend-name {
-  font-size: 16px;
-  margin: 0 0 4px 0;
+  font-size: 13px;
+  margin: 0 0 1px 0;
 }
 
 .friend-status {
-  font-size: 14px;
+  font-size: 10px;
   color: #a0a0a0;
   margin: 0;
   text-transform: capitalize;
@@ -444,8 +491,8 @@ body {
   background: linear-gradient(45deg, #ff4757, #ff3742);
   border: none;
   color: white;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -453,16 +500,41 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(255, 71, 87, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.remove-friend-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, #ff6b7a, #ff4757);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 50%;
 }
 
 .remove-friend-btn:hover {
   transform: scale(1.1);
-  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+  box-shadow: 0 4px 10px rgba(255, 71, 87, 0.4);
+}
+
+.remove-friend-btn:hover::before {
+  opacity: 1;
 }
 
 .remove-friend-btn .icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+  fill: none;
+  stroke: white;
+  position: relative;
+  z-index: 1;
 }
 
 /* Message Sent Popup */
@@ -638,7 +710,7 @@ body {
   }
 }
 
-/* Responsive Design */
+/* Responsive Design - Perfect for all devices */
 @media (max-width: 1024px) {
   .top-bar {
     padding: 0 20px;
@@ -646,27 +718,27 @@ body {
   
   .friends-grid {
     padding: 20px;
-    padding-top: 300px;
+    padding-top: calc(70px + 20px);
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 16px;
   }
 
   .profile-page {
     padding: 20px;
-    padding-top: 300px;
+    padding-top: calc(70px + 20px);
   }
 
   .profile-header {
-    padding: 24px;
-    gap: 20px;
+    padding: 16px;
+    gap: 12px;
   }
 
   .profile-name {
-    font-size: 28px;
+    font-size: 16px;
   }
 
   .friends-section {
-    padding: 24px;
+    padding: 16px;
   }
 
   .message-popup {
@@ -710,16 +782,9 @@ body {
     padding: 8px;
   }
   
-  .notification-badge {
-    font-size: 9px;
-    padding: 1px 5px;
-    min-width: 14px;
-    height: 14px;
-  }
-  
   .friends-grid {
     padding: 16px;
-    padding-top: 500px;
+    padding-top: calc(60px + 16px);
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
@@ -736,31 +801,29 @@ body {
   .friend-name {
     font-size: 16px;
   }
-  
-
 
   .profile-page {
     padding: 16px;
-    padding-top: 1000px;
+    padding-top: calc(60px + 16px);
   }
 
   .profile-header {
-    flex-direction: column;
-    text-align: center;
-    padding: 20px;
-    gap: 16px;
+    flex-direction: row;
+    text-align: left;
+    padding: 12px;
+    gap: 10px;
   }
 
   .profile-name {
-    font-size: 24px;
-  }
-
-  .profile-email {
     font-size: 14px;
   }
 
+  .profile-email {
+    font-size: 11px;
+  }
+
   .friends-section {
-    padding: 20px;
+    padding: 12px;
   }
 
   .message-popup {
@@ -829,13 +892,13 @@ body {
   }
 
   .remove-friend-btn {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
   }
 
   .remove-friend-btn .icon {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
   }
 }
 
@@ -875,18 +938,9 @@ body {
     padding: 6px;
   }
   
-  .notification-badge {
-    font-size: 8px;
-    padding: 1px 4px;
-    min-width: 12px;
-    height: 12px;
-    top: 2px;
-    right: 2px;
-  }
-  
   .friends-grid {
     padding: 12px;
-    padding-top: 250px;
+    padding-top: calc(56px + 12px);
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
@@ -903,34 +957,32 @@ body {
   .friend-name {
     font-size: 14px;
   }
-  
-
 
   .profile-page {
     padding: 12px;
-    padding-top: 250px;
+    padding-top: calc(56px + 12px);
   }
 
   .profile-header {
-    padding: 16px;
-    gap: 12px;
+    padding: 12px;
+    gap: 10px;
   }
 
   .profile-name {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .profile-email {
-    font-size: 13px;
+    font-size: 12px;
   }
 
-  .edit-profile-btn {
-    padding: 10px 20px;
-    font-size: 13px;
+  .logout-btn {
+    padding: 8px 12px;
+    font-size: 12px;
   }
 
   .friends-section {
-    padding: 16px;
+    padding: 12px;
   }
 
   .message-popup {
@@ -986,13 +1038,14 @@ body {
   }
 
   .add-friends-btn {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
 
   .add-friends-btn .icon {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
+    stroke-width: 3;
   }
 
   .modal-content {
@@ -1038,13 +1091,14 @@ body {
   }
 
   .remove-friend-btn {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
   }
 
   .remove-friend-btn .icon {
-    width: 13px;
-    height: 13px;
+    width: 15px;
+    height: 15px;
+    stroke-width: 3;
   }
 }
 
@@ -1078,7 +1132,7 @@ body {
   
   .friends-grid {
     padding: 8px;
-    padding-top: 200px;
+    padding-top: calc(52px + 8px);
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
@@ -1095,12 +1149,10 @@ body {
   .friend-name {
     font-size: 13px;
   }
-  
-
 
   .profile-page {
     padding: 8px;
-    padding-top: 200px;
+    padding-top: calc(52px + 8px);
   }
 
   .profile-header {
@@ -1116,8 +1168,8 @@ body {
     font-size: 12px;
   }
 
-  .edit-profile-btn {
-    padding: 8px 16px;
+  .logout-btn {
+    padding: 8px 12px;
     font-size: 12px;
   }
 
@@ -1178,13 +1230,14 @@ body {
   }
 
   .add-friends-btn {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
   }
 
   .add-friends-btn .icon {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
+    stroke-width: 3;
   }
 
   .modal-content {
@@ -1230,13 +1283,14 @@ body {
   }
 
   .remove-friend-btn {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
   }
 
   .remove-friend-btn .icon {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
+    stroke-width: 3;
   }
 }
 
@@ -1261,11 +1315,11 @@ body {
   }
   
   .friends-grid {
-    padding-top: 250px;
+    padding-top: calc(50px + 24px);
   }
 
   .profile-page {
-    padding-top: 250px;
+    padding-top: calc(50px + 24px);
   }
 }
 
@@ -1280,7 +1334,7 @@ body {
 /* Dark mode support for system preferences */
 @media (prefers-color-scheme: dark) {
   .app {
-    background-color: #2a2a2a;
+    background-color: #000000;
   }
   
   .top-bar {
@@ -1293,7 +1347,9 @@ body {
   .icon-btn,
   .icon,
   .friend-card,
-  .edit-profile-btn,
+  .edit-avatar-btn,
+  .edit-name-btn,
+  .logout-btn,
   .add-friends-btn,
   .profile-friend-item,
   .remove-friend-btn,
@@ -1313,7 +1369,9 @@ body {
     transform: none;
   }
   
-  .edit-profile-btn:hover,
+  .edit-avatar-btn:hover,
+  .edit-name-btn:hover,
+  .logout-btn:hover,
   .add-friends-btn:hover,
   .remove-friend-btn:hover,
   .popup-ok-btn:hover {

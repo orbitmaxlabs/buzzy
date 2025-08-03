@@ -2,7 +2,6 @@ import { useState } from 'react'
 import './App.css'
 
 function App() {
-  const [notifications, setNotifications] = useState(3)
   const [currentPage, setCurrentPage] = useState('friends') // 'friends' or 'profile'
   const [showAddFriends, setShowAddFriends] = useState(false)
   const [showMessagePopup, setShowMessagePopup] = useState(false)
@@ -114,14 +113,7 @@ function App() {
     friends: []
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'online': return '#10B981'
-      case 'away': return '#F59E0B'
-      case 'offline': return '#6B7280'
-      default: return '#6B7280'
-    }
-  }
+
 
   const handleFriendCardClick = (friend) => {
     setSelectedFriend(friend)
@@ -163,6 +155,11 @@ function App() {
     // Add edit profile functionality here
   }
 
+  const handleLogout = () => {
+    console.log('Logout clicked')
+    // Add logout functionality here
+  }
+
   const handleAddFriends = () => {
     setShowAddFriends(!showAddFriends)
   }
@@ -192,15 +189,6 @@ function App() {
         </div>
         
         <div className="top-bar-right">
-          <button className="icon-btn notification-btn">
-            <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-            </svg>
-            {notifications > 0 && (
-              <span className="notification-badge">{notifications}</span>
-            )}
-          </button>
           {currentPage === 'friends' ? (
             <button className="icon-btn profile-btn" onClick={handleProfileClick}>
               <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -211,8 +199,7 @@ function App() {
           ) : (
             <button className="icon-btn back-btn" onClick={handleBackToFriends}>
               <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+                <path d="M18 6L6 18M6 6l12 12"/>
               </svg>
             </button>
           )}
@@ -230,10 +217,6 @@ function App() {
             >
               <div className="friend-avatar">
                 <span className="avatar-emoji">{friend.avatar}</span>
-                <div 
-                  className="status-indicator"
-                  style={{ backgroundColor: getStatusColor(friend.status) }}
-                ></div>
               </div>
               <div className="friend-info">
                 <h3 className="friend-name">{friend.name}</h3>
@@ -246,13 +229,32 @@ function App() {
           <div className="profile-header">
             <div className="profile-avatar">
               <span className="avatar-emoji large">{currentUser.avatar}</span>
+              <button className="edit-avatar-btn" onClick={handleEditProfile}>
+                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
             </div>
             <div className="profile-info">
-              <h1 className="profile-name">{currentUser.name}</h1>
+              <div className="profile-name-container">
+                <h1 className="profile-name">{currentUser.name}</h1>
+                <button className="edit-name-btn" onClick={handleEditProfile}>
+                  <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+              </div>
               <p className="profile-email">{currentUser.email}</p>
             </div>
-            <button className="edit-profile-btn" onClick={handleEditProfile}>
-              Edit Profile
+            <button className="logout-btn" onClick={handleLogout}>
+              <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16,17 21,12 16,7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              Logout
             </button>
           </div>
 
@@ -260,7 +262,7 @@ function App() {
             <div className="section-header">
               <h2 className="section-title">Friends ({friends.length})</h2>
               <button className="add-friends-btn" onClick={handleAddFriends}>
-                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
@@ -293,10 +295,6 @@ function App() {
                 <div key={friend.id} className="profile-friend-item">
                   <div className="friend-avatar">
                     <span className="avatar-emoji">{friend.avatar}</span>
-                    <div 
-                      className="status-indicator"
-                      style={{ backgroundColor: getStatusColor(friend.status) }}
-                    ></div>
                   </div>
                   <div className="friend-info">
                     <h3 className="friend-name">{friend.name}</h3>
@@ -307,10 +305,10 @@ function App() {
                     onClick={() => handleRemoveFriend(friend.id)}
                     title={`Remove ${friend.name} from friends list`}
                   >
-                    <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
+                                         <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                       <line x1="18" y1="6" x2="6" y2="18"></line>
+                       <line x1="6" y1="6" x2="18" y2="18"></line>
+                     </svg>
                   </button>
                 </div>
               ))}
@@ -329,8 +327,7 @@ function App() {
               </div>
               <button className="popup-close-btn" onClick={handleCloseMessagePopup}>
                 <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                  <path d="M18 6L6 18M6 6l12 12"/>
                 </svg>
               </button>
             </div>
