@@ -31,12 +31,14 @@ service cloud.firestore {
         request.resource.data.fromUid == request.auth.uid;
     }
     
-    // Notifications - users can read/write their own notifications
+    // Notifications - users can read their own notifications, Firebase Functions can write
     match /notifications/{notificationId} {
-      allow read, write: if request.auth != null && 
+      allow read: if request.auth != null && 
         resource.data.targetUid == request.auth.uid;
       allow create: if request.auth != null && 
         request.resource.data.targetUid == request.auth.uid;
+      // Allow Firebase Functions to write notifications (they use admin SDK)
+      allow write: if true; // This allows the Firebase Function to write notifications
     }
     
     // Notification tokens - users can read/write their own tokens, but anyone can read tokens (for sending notifications)

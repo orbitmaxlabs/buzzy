@@ -82,39 +82,24 @@ export const sendFriendAddedNotification = async (friendUid, friendUsername, cur
 
 // Utility function to send message notification
 export const sendMessageNotification = async (fromUser, toUid, messageText) => {
-  const maxRetries = 3;
-  let lastError;
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`📱 Attempt ${attempt}/${maxRetries}: Sending message notification...`);
-      
-      await sendNotificationToUser(toUid, {
-        title: `New Message from ${fromUser.username}`,
-        body: messageText.length > 50 ? `${messageText.substring(0, 50)}...` : messageText,
-        data: {
-          type: 'message',
-          fromUid: fromUser.uid,
-          fromUsername: fromUser.username,
-          message: messageText
-        }
-      });
-      
-      console.log(`✅ Message notification sent successfully on attempt ${attempt}`);
-      return; // Success, exit the retry loop
-      
-    } catch (error) {
-      console.error(`❌ Attempt ${attempt}/${maxRetries} failed:`, error);
-      lastError = error;
-      
-      if (attempt < maxRetries) {
-        console.log(`⏳ Waiting 1 second before retry...`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+  try {
+    console.log(`📱 Sending message notification...`);
+    
+    await sendNotificationToUser(toUid, {
+      title: `New Message from ${fromUser.username}`,
+      body: messageText.length > 50 ? `${messageText.substring(0, 50)}...` : messageText,
+      data: {
+        type: 'message',
+        fromUid: fromUser.uid,
+        fromUsername: fromUser.username,
+        message: messageText
       }
-    }
+    });
+    
+    console.log(`✅ Message notification sent successfully`);
+    
+  } catch (error) {
+    console.error(`❌ Failed to send message notification:`, error);
+    throw error;
   }
-  
-  // All attempts failed
-  console.error(`❌ All ${maxRetries} attempts to send message notification failed. Last error:`, lastError);
-  throw lastError;
 }; 

@@ -342,31 +342,53 @@ export const getNotificationToken = async () => {
       throw new Error('Notification permission denied');
     }
 
-    console.log('Step 3: Getting notification token...');
+    console.log('Step 3: Checking service worker registration...');
+    
+    // Ensure service worker is registered
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          scope: '/'
+        });
+        console.log('✅ Service worker registered:', registration);
+        
+        // Wait for service worker to be ready
+        await navigator.serviceWorker.ready;
+        console.log('✅ Service worker is ready');
+      } catch (swError) {
+        console.log('⚠️ Service worker registration failed, trying alternative approach:', swError);
+      }
+    }
+
+    console.log('Step 4: Getting notification token...');
     
     // Wait a bit for permission to be fully processed
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Try multiple approaches for token generation
     let token;
     let lastError;
     
-    // Method 1: Try without VAPID key
+    // Method 1: Try with VAPID key and service worker
     try {
-      console.log('Method 1: Attempting to get token without VAPID key...');
-      token = await getToken(messaging);
+      console.log('Method 1: Attempting to get token with VAPID key and service worker...');
+      console.log('VAPID Key being used:', 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM');
+      
+      const registration = await navigator.serviceWorker.getRegistration();
+      token = await getToken(messaging, {
+        vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
+        serviceWorkerRegistration: registration
+      });
       console.log('✅ Method 1 succeeded');
     } catch (error1) {
       console.log('❌ Method 1 failed:', error1.message);
       lastError = error1;
     }
     
-    // Method 2: Try with VAPID key
+    // Method 2: Try with VAPID key only
     if (!token) {
       try {
-        console.log('Method 2: Attempting to get token with VAPID key...');
-        console.log('VAPID Key being used:', 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM');
-        
+        console.log('Method 2: Attempting to get token with VAPID key only...');
         token = await getToken(messaging, {
           vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM'
         });
@@ -377,14 +399,11 @@ export const getNotificationToken = async () => {
       }
     }
     
-    // Method 3: Try with different service worker scope
+    // Method 3: Try without VAPID key
     if (!token) {
       try {
-        console.log('Method 3: Attempting to get token with different service worker scope...');
-        token = await getToken(messaging, {
-          vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
-          serviceWorkerRegistration: await navigator.serviceWorker.getRegistration()
-        });
+        console.log('Method 3: Attempting to get token without VAPID key...');
+        token = await getToken(messaging);
         console.log('✅ Method 3 succeeded');
       } catch (error3) {
         console.log('❌ Method 3 failed:', error3.message);
@@ -522,22 +541,8 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     const result = await response.json();
     console.log('✅ Firebase Function success response:', result);
     
-    // Also store it in Firestore for the user to see in-app
-    console.log('Step 3: Storing notification in Firestore...');
-    const notificationRef = collection(db, 'notifications');
-    const notificationData = {
-      targetUid,
-      title: notification.title,
-      body: notification.body,
-      data: notification.data || {},
-      read: false,
-      createdAt: new Date()
-    };
-    
-    console.log('Notification data to store:', notificationData);
-    
-    await addDoc(notificationRef, notificationData);
-    console.log('✅ Notification stored in Firestore');
+    // Note: Notification storage in Firestore is handled by the Firebase Function
+    // No need to store it client-side to avoid permissions issues
 
     console.log('📱 === SEND NOTIFICATION DEBUG END: SUCCESS ===');
     return result;

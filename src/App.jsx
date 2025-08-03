@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import { useAuth } from './contexts/AuthContext.jsx'
 import NotificationBell from './components/NotificationBell.jsx'
-import MessageModal from './components/MessageModal.jsx'
-import NotificationTest from './components/NotificationTest.jsx'
+import RefreshTokenButton from './components/RefreshTokenButton.jsx'
 import { 
   searchUsersByUsername, 
   sendFriendRequest, 
@@ -11,7 +10,6 @@ import {
   respondToFriendRequest, 
   getFriends, 
   addFriend, 
-  removeFriend,
   migrateUserData,
   cleanupDuplicateFriends
 } from './firebase.js'
@@ -26,8 +24,6 @@ function App() {
   const { currentUser: authUser, userProfile, signInWithGoogle, logout: authLogout, updateProfile } = useAuth()
   const [currentPage, setCurrentPage] = useState('friends') // 'friends' or 'profile'
   const [showAddFriends, setShowAddFriends] = useState(false)
-  const [showMessageModal, setShowMessageModal] = useState(false)
-  const [selectedFriend, setSelectedFriend] = useState(null)
   const [friends, setFriends] = useState([])
   const [friendRequests, setFriendRequests] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -236,15 +232,81 @@ function App() {
     }
   }
 
-  const handleFriendCardClick = (friend) => {
-    setSelectedFriend(friend)
-    setShowMessageModal(true)
-  }
+  const handleFriendCardClick = async (friend) => {
+    // Get the friend card element
+    const friendCard = document.querySelector(`[data-friend-id="${friend.id}"]`);
+    if (!friendCard) return;
 
-  const handleCloseMessageModal = () => {
-    setShowMessageModal(false)
-    setSelectedFriend(null)
-  }
+    // Show loading state
+    friendCard.style.backgroundColor = '#f3f4f6';
+    friendCard.style.cursor = 'wait';
+    
+    // Add loading spinner
+    const loadingSpinner = document.createElement('div');
+    loadingSpinner.className = 'loading-spinner';
+    loadingSpinner.innerHTML = `
+      <svg class="animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M1 4v6h6" />
+        <path d="M23 20v-6h-6" />
+        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+      </svg>
+    `;
+    loadingSpinner.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 24px;
+      height: 24px;
+      color: #6b7280;
+      z-index: 10;
+    `;
+    
+    friendCard.style.position = 'relative';
+    friendCard.appendChild(loadingSpinner);
+
+    try {
+      // Simulate some processing time
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Show success state
+      friendCard.style.backgroundColor = '#d1fae5';
+      loadingSpinner.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #10b981;">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+      `;
+      
+      // Remove success indicator after 2 seconds
+      setTimeout(() => {
+        friendCard.style.backgroundColor = '';
+        friendCard.style.cursor = 'pointer';
+        friendCard.removeChild(loadingSpinner);
+        friendCard.style.position = '';
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error processing friend card click:', error);
+      
+      // Show error state
+      friendCard.style.backgroundColor = '#fee2e2';
+      loadingSpinner.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #ef4444;">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      `;
+      
+      // Remove error indicator after 2 seconds
+      setTimeout(() => {
+        friendCard.style.backgroundColor = '';
+        friendCard.style.cursor = 'pointer';
+        friendCard.removeChild(loadingSpinner);
+        friendCard.style.position = '';
+      }, 2000);
+    }
+  };
+
+
 
   const handleProfileClick = () => {
     setCurrentPage('profile')
@@ -301,19 +363,7 @@ function App() {
     setSearchResults([])
   }
 
-  const handleRemoveFriend = async (friendId) => {
-    try {
-      const friend = friends.find(f => f.id === friendId)
-      if (friend) {
-        await removeFriend(authUser.uid, friend.uid)
-        await loadFriends() // Reload friends list
-        alert(`${friend.username} has been removed from your friends list`)
-      }
-    } catch (error) {
-      console.error('Error removing friend:', error)
-      alert('Failed to remove friend')
-    }
-  }
+
 
   // Show login screen if user is not authenticated
   if (!authUser || !userProfile) {
@@ -368,6 +418,7 @@ function App() {
             </button>
           )}
           <NotificationBell />
+          <RefreshTokenButton />
         </div>
       </header>
 
@@ -442,6 +493,7 @@ function App() {
                   key={friend.id} 
                   className="friend-card"
                   onClick={() => handleFriendCardClick(friend)}
+                  data-friend-id={friend.id}
                 >
                   <div className="friend-avatar">
                     <span className="avatar-emoji">{friend.photoURL || '👤'}</span>
@@ -593,23 +645,20 @@ function App() {
 
             <div className="friends-list">
               {friends.map(friend => (
-                <div key={friend.id} className="profile-friend-item">
+                <div 
+                  key={friend.id} 
+                  className="profile-friend-item"
+                  data-friend-id={friend.id}
+                  onClick={() => handleFriendCardClick(friend)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div className="friend-avatar">
                     <span className="avatar-emoji">{friend.photoURL || '👤'}</span>
                   </div>
                   <div className="friend-info">
                     <h3 className="friend-name">{friend.username.toLowerCase().replace(/\s+/g, '')}</h3>
                   </div>
-                  <button 
-                    className="remove-friend-btn"
-                    onClick={() => handleRemoveFriend(friend.id)}
-                    title={`Remove ${friend.username} from friends list`}
-                  >
-                                         <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                       <line x1="18" y1="6" x2="6" y2="18"></line>
-                       <line x1="6" y1="6" x2="18" y2="18"></line>
-                     </svg>
-                  </button>
+
                 </div>
               ))}
             </div>
@@ -617,84 +666,7 @@ function App() {
         </main>
       )}
 
-      {/* Message Modal */}
-      <MessageModal
-        friend={selectedFriend}
-        isOpen={showMessageModal}
-        onClose={handleCloseMessageModal}
-      />
       
-      {/* Notification Test Component (for debugging) */}
-      {authUser && <NotificationTest />}
-      
-      {/* Manual notification setup button */}
-      {authUser && (
-        <div style={{
-          position: 'fixed',
-          bottom: '20px',
-          left: '20px',
-          background: 'white',
-          padding: '15px',
-          border: '1px solid #ccc',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-          zIndex: 1000,
-          maxWidth: '250px'
-        }}>
-          <h5 style={{ margin: '0 0 10px 0' }}>🔔 Enable Notifications</h5>
-          <p style={{ margin: '0 0 10px 0', fontSize: '12px' }}>
-            Grant notification permission to receive greetings from friends
-          </p>
-          <button
-            onClick={initializeNotifications}
-            style={{
-              width: '100%',
-              padding: '8px',
-              background: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '12px'
-            }}
-          >
-            Enable Notifications
-          </button>
-          <button
-            onClick={async () => {
-              console.log('🔄 Force refreshing notification token...');
-              const { removeNotificationToken, getNotificationToken, saveNotificationToken } = await import('./firebase.js');
-              try {
-                // Remove existing token
-                await removeNotificationToken(authUser.uid);
-                console.log('✅ Old token removed');
-                
-                // Get new token
-                const newToken = await getNotificationToken();
-                await saveNotificationToken(authUser.uid, newToken);
-                console.log('✅ New token saved');
-                alert('Notification token refreshed successfully!');
-              } catch (error) {
-                console.error('❌ Error refreshing token:', error);
-                alert('Failed to refresh token: ' + error.message);
-              }
-            }}
-            style={{
-              width: '100%',
-              padding: '8px',
-              marginTop: '5px',
-              background: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '12px'
-            }}
-          >
-            Refresh Token
-          </button>
-        </div>
-      )}
     </div>
   )
 }

@@ -32,7 +32,7 @@ messaging.onBackgroundMessage((payload) => {
     data: payload.data || {},
     requireInteraction: true,
     tag: 'buzzy-notification', // Prevent duplicate notifications
-    renotify: true,
+    renotify: false, // Changed to false to prevent multiple notifications
     actions: [
       {
         action: 'open',
@@ -79,4 +79,16 @@ self.addEventListener('notificationclick', (event) => {
 // Handle notification close
 self.addEventListener('notificationclose', (event) => {
   console.log('Notification closed:', event);
+});
+
+// Handle service worker installation
+self.addEventListener('install', (event) => {
+  console.log('Service Worker installing...');
+  self.skipWaiting();
+});
+
+// Handle service worker activation
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating...');
+  event.waitUntil(self.clients.claim());
 }); 
