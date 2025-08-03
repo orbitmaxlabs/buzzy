@@ -78,4 +78,22 @@ export const sendFriendAddedNotification = async (friendUid, friendUsername, cur
   } catch (error) {
     console.error('Error sending friend added notification:', error);
   }
+};
+
+// Utility function to send message notification
+export const sendMessageNotification = async (fromUser, toUid, messageText) => {
+  try {
+    await sendNotificationToUser(toUid, {
+      title: `New Message from ${fromUser.username}`,
+      body: messageText.length > 50 ? `${messageText.substring(0, 50)}...` : messageText,
+      data: {
+        type: 'message',
+        fromUid: fromUser.uid,
+        fromUsername: fromUser.username,
+        message: messageText
+      }
+    });
+  } catch (error) {
+    console.error('Error sending message notification:', error);
+  }
 }; 

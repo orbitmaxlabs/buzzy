@@ -323,19 +323,23 @@ export const requestNotificationPermission = async () => {
 
 export const getNotificationToken = async () => {
   try {
+    console.log('Requesting notification permission...');
     const permission = await requestNotificationPermission();
     if (!permission) {
+      console.log('Notification permission denied');
       throw new Error('Notification permission denied');
     }
 
+    console.log('Getting notification token...');
     const token = await getToken(messaging, {
-      vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM' // You'll need to replace this
+      vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM'
     });
 
     if (token) {
-      console.log('Notification token:', token);
+      console.log('Notification token generated successfully:', token.substring(0, 20) + '...');
       return token;
     } else {
+      console.log('No registration token available');
       throw new Error('No registration token available');
     }
   } catch (error) {
@@ -370,18 +374,23 @@ export const removeNotificationToken = async (uid) => {
 
 export const sendNotificationToUser = async (targetUid, notification) => {
   try {
+    console.log('Sending notification to user:', targetUid);
+    
     // Get the user's notification token
     const tokenRef = doc(db, 'notificationTokens', targetUid);
     const tokenSnap = await getDoc(tokenRef);
     
     if (!tokenSnap.exists()) {
+      console.log('User has no notification token:', targetUid);
       throw new Error('User has no notification token');
     }
 
     const tokenData = tokenSnap.data();
+    console.log('Found notification token for user:', targetUid);
     
-                // Send notification via Firebase Functions
-            const response = await fetch('https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification', {
+    // Send notification via Firebase Functions
+    console.log('Calling Firebase Function to send notification...');
+    const response = await fetch('https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -394,11 +403,16 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       })
     });
 
+    console.log('Firebase Function response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error('Failed to send notification');
+      const errorText = await response.text();
+      console.error('Firebase Function error:', errorText);
+      throw new Error(`Failed to send notification: ${response.status} ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('Notification sent successfully:', result);
     
     // Also store it in Firestore for the user to see in-app
     const notificationRef = collection(db, 'notifications');
@@ -462,4 +476,62 @@ export const onForegroundMessage = (callback) => {
     console.log('Foreground message received:', payload);
     callback(payload);
   });
+};
+
+// Message functions
+export const sendMessage = async (fromUid, toUid, messageText) => {
+  try {
+    const messageData = {
+      fromUid,
+      toUid,
+      message: messageText,
+      createdAt: new Date(),
+      read: false
+    };
+    
+    await addDoc(collection(db, 'messages'), messageData);
+    return messageData;
+  } catch (error) {
+    console.error('Error sending message:', error);
+    throw error;
+  }
+};
+
+export const getMessages = async (userUid, friendUid) => {
+  try {
+    const messagesRef = collection(db, 'messages');
+    const q = query(
+      messagesRef,
+      where('fromUid', 'in', [userUid, friendUid]),
+      where('toUid', 'in', [userUid, friendUid])
+    );
+    const querySnapshot = await getDocs(q);
+    
+    const messages = [];
+    querySnapshot.forEach((doc) => {
+      messages.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    // Sort by creation time
+    return messages.sort((a, b) => a.createdAt.toDate() - b.createdAt.toDate());
+  } catch (error) {
+    console.error('Error getting messages:', error);
+    throw error;
+  }
+};
+
+export const markMessageAsRead = async (messageId) => {
+  try {
+    const messageRef = doc(db, 'messages', messageId);
+    await updateDoc(messageRef, {
+      read: true,
+      readAt: new Date()
+    });
+  } catch (error) {
+    console.error('Error marking message as read:', error);
+    throw error;
+  }
 };

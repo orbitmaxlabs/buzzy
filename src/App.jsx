@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import { useAuth } from './contexts/AuthContext.jsx'
 import NotificationBell from './components/NotificationBell.jsx'
+import MessageModal from './components/MessageModal.jsx'
+import NotificationTest from './components/NotificationTest.jsx'
 import { 
   searchUsersByUsername, 
   sendFriendRequest, 
@@ -24,7 +26,7 @@ function App() {
   const { currentUser: authUser, userProfile, signInWithGoogle, logout: authLogout, updateProfile } = useAuth()
   const [currentPage, setCurrentPage] = useState('friends') // 'friends' or 'profile'
   const [showAddFriends, setShowAddFriends] = useState(false)
-  const [showMessagePopup, setShowMessagePopup] = useState(false)
+  const [showMessageModal, setShowMessageModal] = useState(false)
   const [selectedFriend, setSelectedFriend] = useState(null)
   const [friends, setFriends] = useState([])
   const [friendRequests, setFriendRequests] = useState([])
@@ -46,8 +48,25 @@ function App() {
       
       loadFriends()
       loadFriendRequests()
+      
+      // Initialize notifications for the user
+      initializeNotifications()
     }
   }, [authUser, userProfile])
+
+  const initializeNotifications = async () => {
+    try {
+      // Request notification permission if not already granted
+      if ('Notification' in window && Notification.permission === 'default') {
+        const permission = await Notification.requestPermission()
+        if (permission === 'granted') {
+          console.log('Notification permission granted')
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing notifications:', error)
+    }
+  }
 
   // Initialize edit form when user profile changes
   useEffect(() => {
@@ -157,11 +176,11 @@ function App() {
 
   const handleFriendCardClick = (friend) => {
     setSelectedFriend(friend)
-    setShowMessagePopup(true)
+    setShowMessageModal(true)
   }
 
-  const handleCloseMessagePopup = () => {
-    setShowMessagePopup(false)
+  const handleCloseMessageModal = () => {
+    setShowMessageModal(false)
     setSelectedFriend(null)
   }
 
@@ -536,43 +555,15 @@ function App() {
         </main>
       )}
 
-      {/* Message Sent Popup */}
-      {showMessagePopup && selectedFriend && (
-        <div className="message-popup-overlay" onClick={handleCloseMessagePopup}>
-          <div className="message-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="popup-header">
-              <div className="popup-avatar">
-                <span className="avatar-emoji">{selectedFriend.photoURL || '👤'}</span>
-              </div>
-              <button className="popup-close-btn" onClick={handleCloseMessagePopup}>
-                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-            <div className="popup-content">
-              <div className="success-icon">
-                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22,4 12,14.01 9,11.01"></polyline>
-                </svg>
-              </div>
-              <h3 className="popup-title">Message Sent!</h3>
-              <p className="popup-message">
-                Your message has been sent successfully to <strong>{selectedFriend.username}</strong>
-              </p>
-              <p className="popup-subtitle">
-                They'll receive your message and can respond when they're available.
-              </p>
-            </div>
-            <div className="popup-actions">
-              <button className="popup-ok-btn" onClick={handleCloseMessagePopup}>
-                Got it!
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Message Modal */}
+      <MessageModal
+        friend={selectedFriend}
+        isOpen={showMessageModal}
+        onClose={handleCloseMessageModal}
+      />
+      
+      {/* Notification Test Component (for debugging) */}
+      {authUser && <NotificationTest />}
     </div>
   )
 }
