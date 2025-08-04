@@ -359,7 +359,6 @@ export const getNotificationToken = async () => {
     if (!('serviceWorker' in navigator)) {
       throw new Error('Service workers are not supported in this browser');
     }
-
     const registration = await getMessagingRegistration();
 
     console.log('✅ Firebase messaging service worker:', registration);
@@ -670,7 +669,6 @@ export const testVapidKey = async () => {
     if (!('serviceWorker' in navigator)) {
       throw new Error('Service workers are not supported');
     }
-
     const registration = await getMessagingRegistration();
 
     await navigator.serviceWorker.ready;
