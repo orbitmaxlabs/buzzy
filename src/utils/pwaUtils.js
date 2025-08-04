@@ -54,22 +54,24 @@ export const registerServiceWorkers = async () => {
 // Show update notification to user
 const showUpdateNotification = () => {
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Buzzy Update Available', {
-      body: 'A new version of Buzzy is available. Refresh the page to update.',
-      icon: '/android/android-launchericon-192-192.png',
-      badge: '/android/android-launchericon-48-48.png',
-      tag: 'buzzy-update',
-      requireInteraction: true,
-      actions: [
-        {
-          action: 'refresh',
-          title: 'Refresh Now'
-        },
-        {
-          action: 'dismiss',
-          title: 'Later'
-        }
-      ]
+    navigator.serviceWorker.ready.then((registration) => {
+      registration.showNotification('Buzzy Update Available', {
+        body: 'A new version of Buzzy is available. Refresh the page to update.',
+        icon: '/android/android-launchericon-192-192.png',
+        badge: '/android/android-launchericon-48-48.png',
+        tag: 'buzzy-update',
+        requireInteraction: true,
+        actions: [
+          {
+            action: 'refresh',
+            title: 'Refresh Now'
+          },
+          {
+            action: 'dismiss',
+            title: 'Later'
+          }
+        ]
+      });
     });
   }
 };
