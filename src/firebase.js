@@ -408,6 +408,22 @@ export const getNotificationToken = async () => {
     console.log('🌐 Production environment detected');
     console.log('🔑 Attempting to get real FCM token...');
     
+    // Check if we're on a supported domain
+    const currentDomain = window.location.hostname;
+    console.log('Current domain:', currentDomain);
+    
+    // List of domains that should work with FCM
+    const supportedDomains = ['www.adrit.gay', 'adrit.gay', 'localhost', '127.0.0.1'];
+    const isSupportedDomain = supportedDomains.includes(currentDomain);
+    
+    if (!isSupportedDomain) {
+      console.log('⚠️ Domain not in supported list, using fallback token');
+      const fallbackToken = 'prod-fallback-token-' + Date.now();
+      console.log('✅ Fallback token generated:', fallbackToken);
+      console.log('🔔 === NOTIFICATION TOKEN DEBUG END: FALLBACK ===');
+      return fallbackToken;
+    }
+    
     // Try multiple approaches for token generation (production only)
     let token;
     let lastError;
@@ -561,7 +577,13 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     if (!tokenSnap.exists()) {
       console.log('❌ User has no notification token in Firestore');
       console.log('📱 === SEND NOTIFICATION DEBUG END: NO TOKEN ===');
-      throw new Error('User has no notification token');
+      
+      // Instead of throwing an error, return a graceful response
+      return { 
+        success: false, 
+        message: 'User has no notification token. They may not have enabled notifications or the token generation failed.',
+        reason: 'no_token'
+      };
     }
 
     const tokenData = tokenSnap.data();
@@ -575,7 +597,11 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     const token = tokenData.token;
     if (!token) {
       console.log('❌ Token is null or empty');
-      throw new Error('Token is null or empty');
+      return { 
+        success: false, 
+        message: 'Token is null or empty',
+        reason: 'empty_token'
+      };
     }
     
     // Check if it's a mock token in development
@@ -591,7 +617,11 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       console.log('🔄 Production mode: Fallback token detected');
       console.log('📝 Cannot send real notification with fallback token');
       console.log('📱 === SEND NOTIFICATION DEBUG END: FALLBACK ===');
-      return { success: false, message: 'Cannot send notification with fallback token. FCM not properly configured.' };
+      return { 
+        success: false, 
+        message: 'Cannot send notification with fallback token. FCM not properly configured. Please check Firebase Console configuration.',
+        reason: 'fallback_token'
+      };
     }
     
     // Send notification via Firebase Functions
@@ -622,7 +652,11 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       const errorText = await response.text();
       console.error('❌ Firebase Function error response:', errorText);
       console.log('📱 === SEND NOTIFICATION DEBUG END: FUNCTION ERROR ===');
-      throw new Error(`Failed to send notification: ${response.status} ${errorText}`);
+      return { 
+        success: false, 
+        message: `Failed to send notification: ${response.status} ${errorText}`,
+        reason: 'function_error'
+      };
     }
 
     const result = await response.json();
@@ -632,7 +666,7 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     // No need to store it client-side to avoid permissions issues
 
     console.log('📱 === SEND NOTIFICATION DEBUG END: SUCCESS ===');
-    return result;
+    return { ...result, success: true };
   } catch (error) {
     console.error('📱 === SEND NOTIFICATION DEBUG ERROR ===', error);
     console.error('Error details:', {
@@ -640,7 +674,11 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       message: error.message,
       stack: error.stack
     });
-    throw error;
+    return { 
+      success: false, 
+      message: `Error sending notification: ${error.message}`,
+      reason: 'exception'
+    };
   }
 };
 

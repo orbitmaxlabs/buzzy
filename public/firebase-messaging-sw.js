@@ -18,6 +18,10 @@ firebase.initializeApp(firebaseConfig);
 // Initialize Firebase Cloud Messaging
 const messaging = firebase.messaging();
 
+console.log('🎯 === FIREBASE MESSAGING SERVICE WORKER INITIALIZED ===');
+console.log('Firebase config:', firebaseConfig);
+console.log('Messaging initialized:', !!messaging);
+
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log('🎯 === BACKGROUND MESSAGE RECEIVED ===');

@@ -18,8 +18,14 @@ export const sendFriendRequestNotification = async (fromUser, toUid) => {
       }
     };
     
-    await sendNotificationToUser(toUid, notification);
-    console.log('✅ Friend request notification sent successfully');
+    const result = await sendNotificationToUser(toUid, notification);
+    
+    if (result.success) {
+      console.log('✅ Friend request notification sent successfully');
+    } else {
+      console.log('⚠️ Friend request notification failed:', result.message);
+      console.log('Reason:', result.reason);
+    }
   } catch (error) {
     console.error('❌ Error sending friend request notification:', error);
     // Don't throw error to avoid breaking the main flow
@@ -48,8 +54,14 @@ export const sendFriendRequestResponseNotification = async (fromUser, toUid, acc
       }
     };
     
-    await sendNotificationToUser(toUid, notification);
-    console.log('✅ Friend request response notification sent successfully');
+    const result = await sendNotificationToUser(toUid, notification);
+    
+    if (result.success) {
+      console.log('✅ Friend request response notification sent successfully');
+    } else {
+      console.log('⚠️ Friend request response notification failed:', result.message);
+      console.log('Reason:', result.reason);
+    }
   } catch (error) {
     console.error('❌ Error sending friend request response notification:', error);
     // Don't throw error to avoid breaking the main flow
@@ -75,8 +87,14 @@ export const sendFriendAddedNotification = async (user1Uid, user1Username, user2
       }
     };
     
-    await sendNotificationToUser(user1Uid, notification1);
-    console.log('✅ Friend added notification sent to user 1');
+    const result = await sendNotificationToUser(user1Uid, notification1);
+    
+    if (result.success) {
+      console.log('✅ Friend added notification sent to user 1');
+    } else {
+      console.log('⚠️ Friend added notification failed for user 1:', result.message);
+      console.log('Reason:', result.reason);
+    }
   } catch (error) {
     console.error('❌ Error sending friend added notification to user 1:', error);
   }
@@ -98,8 +116,14 @@ export const sendWelcomeNotification = async (uid, username) => {
       }
     };
     
-    await sendNotificationToUser(uid, notification);
-    console.log('✅ Welcome notification sent successfully');
+    const result = await sendNotificationToUser(uid, notification);
+    
+    if (result.success) {
+      console.log('✅ Welcome notification sent successfully');
+    } else {
+      console.log('⚠️ Welcome notification failed:', result.message);
+      console.log('Reason:', result.reason);
+    }
   } catch (error) {
     console.error('❌ Error sending welcome notification:', error);
   }
@@ -113,8 +137,14 @@ export const sendCrossDeviceNotification = async (uid, notification) => {
     console.log('Notification:', notification);
     
     // This will send to all devices where the user is logged in
-    await sendNotificationToUser(uid, notification);
-    console.log('✅ Cross-device notification sent successfully');
+    const result = await sendNotificationToUser(uid, notification);
+    
+    if (result.success) {
+      console.log('✅ Cross-device notification sent successfully');
+    } else {
+      console.log('⚠️ Cross-device notification failed:', result.message);
+      console.log('Reason:', result.reason);
+    }
   } catch (error) {
     console.error('❌ Error sending cross-device notification:', error);
   }
@@ -140,8 +170,14 @@ export const sendMessageNotification = async (fromUser, toUid, messageText) => {
       }
     };
     
-    await sendNotificationToUser(toUid, notification);
-    console.log('✅ Message notification sent successfully');
+    const result = await sendNotificationToUser(toUid, notification);
+    
+    if (result.success) {
+      console.log('✅ Message notification sent successfully');
+    } else {
+      console.log('⚠️ Message notification failed:', result.message);
+      console.log('Reason:', result.reason);
+    }
   } catch (error) {
     console.error('❌ Error sending message notification:', error);
   }
@@ -165,8 +201,14 @@ export const sendSystemNotification = async (uid, title, body, data = {}) => {
       }
     };
     
-    await sendNotificationToUser(uid, notification);
-    console.log('✅ System notification sent successfully');
+    const result = await sendNotificationToUser(uid, notification);
+    
+    if (result.success) {
+      console.log('✅ System notification sent successfully');
+    } else {
+      console.log('⚠️ System notification failed:', result.message);
+      console.log('Reason:', result.reason);
+    }
   } catch (error) {
     console.error('❌ Error sending system notification:', error);
   }
