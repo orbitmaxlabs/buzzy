@@ -330,6 +330,7 @@ export const getNotificationToken = async () => {
     console.log('Is mobile:', /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
     console.log('Current URL:', window.location.href);
     console.log('Is localhost:', window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    console.log('Is HTTPS:', window.location.protocol === 'https:');
     
     // Check if we're in development/localhost
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -403,6 +404,10 @@ export const getNotificationToken = async () => {
       return mockToken;
     }
     
+    // For production, try to get a real token
+    console.log('🌐 Production environment detected');
+    console.log('🔑 Attempting to get real FCM token...');
+    
     // Try multiple approaches for token generation (production only)
     let token;
     let lastError;
@@ -411,6 +416,8 @@ export const getNotificationToken = async () => {
     try {
       console.log('Method 1: Attempting to get token with VAPID key and service worker...');
       const registration = await navigator.serviceWorker.getRegistration();
+      console.log('Service worker registration for token:', registration);
+      
       token = await getToken(messaging, {
         vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
         serviceWorkerRegistration: registration
@@ -418,6 +425,7 @@ export const getNotificationToken = async () => {
       console.log('✅ Method 1 succeeded');
     } catch (error1) {
       console.log('❌ Method 1 failed:', error1.message);
+      console.log('Error details:', error1);
       lastError = error1;
     }
     
@@ -431,6 +439,7 @@ export const getNotificationToken = async () => {
         console.log('✅ Method 2 succeeded');
       } catch (error2) {
         console.log('❌ Method 2 failed:', error2.message);
+        console.log('Error details:', error2);
         lastError = error2;
       }
     }
@@ -443,6 +452,7 @@ export const getNotificationToken = async () => {
         console.log('✅ Method 3 succeeded');
       } catch (error3) {
         console.log('❌ Method 3 failed:', error3.message);
+        console.log('Error details:', error3);
         lastError = error3;
       }
     }
@@ -456,7 +466,14 @@ export const getNotificationToken = async () => {
       console.log('❌ All methods failed to generate token');
       console.log('Last error:', lastError);
       console.log('🔔 === NOTIFICATION TOKEN DEBUG END: FAILED ===');
-      throw new Error(`No registration token available: ${lastError?.message || 'Unknown error'}`);
+      
+      // For production, if we can't get a real token, return a mock token
+      // This allows the app to work even if FCM is not properly configured
+      console.log('🔄 Falling back to mock token for production');
+      const fallbackToken = 'prod-fallback-token-' + Date.now();
+      console.log('✅ Fallback token generated:', fallbackToken);
+      console.log('🔔 === NOTIFICATION TOKEN DEBUG END: FALLBACK ===');
+      return fallbackToken;
     }
   } catch (error) {
     console.error('🔔 === NOTIFICATION TOKEN DEBUG ERROR ===', error);
@@ -475,6 +492,7 @@ export const saveNotificationToken = async (uid, token) => {
     console.log('User UID:', uid);
     console.log('Token (first 20 chars):', token.substring(0, 20) + '...');
     console.log('Is mock token:', token.startsWith('mock-dev-token-'));
+    console.log('Is fallback token:', token.startsWith('prod-fallback-token-'));
     
     // If it's a mock token in development, just log it and return
     if (token.startsWith('mock-dev-token-')) {
@@ -484,13 +502,20 @@ export const saveNotificationToken = async (uid, token) => {
       return;
     }
     
+    // If it's a fallback token in production, save it to Firestore
+    if (token.startsWith('prod-fallback-token-')) {
+      console.log('🔄 Production mode: Fallback token detected');
+      console.log('📝 Saving fallback token to Firestore for testing');
+    }
+    
     const tokenRef = doc(db, 'notificationTokens', uid);
     console.log('Token document reference:', tokenRef.path);
     
     const tokenData = {
       token,
       createdAt: new Date(),
-      lastUsed: new Date()
+      lastUsed: new Date(),
+      isFallback: token.startsWith('prod-fallback-token-')
     };
     
     console.log('Token data to save:', tokenData);
@@ -543,7 +568,8 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     console.log('Token data retrieved:', {
       token: tokenData.token ? tokenData.token.substring(0, 20) + '...' : 'null',
       createdAt: tokenData.createdAt,
-      lastUsed: tokenData.lastUsed
+      lastUsed: tokenData.lastUsed,
+      isFallback: tokenData.isFallback || false
     });
     
     const token = tokenData.token;
@@ -558,6 +584,14 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       console.log('📝 Skipping Firebase Function call for mock token');
       console.log('📱 === SEND NOTIFICATION DEBUG END: SUCCESS (DEV) ===');
       return { success: true, message: 'Mock notification sent in development' };
+    }
+    
+    // Check if it's a fallback token in production
+    if (token.startsWith('prod-fallback-token-')) {
+      console.log('🔄 Production mode: Fallback token detected');
+      console.log('📝 Cannot send real notification with fallback token');
+      console.log('📱 === SEND NOTIFICATION DEBUG END: FALLBACK ===');
+      return { success: false, message: 'Cannot send notification with fallback token. FCM not properly configured.' };
     }
     
     // Send notification via Firebase Functions

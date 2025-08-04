@@ -12,7 +12,8 @@ import {
   getFriends, 
   addFriend, 
   migrateUserData,
-  cleanupDuplicateFriends
+  cleanupDuplicateFriends,
+  sendNotificationToUser // Added sendNotificationToUser
 } from './firebase.js'
 import {
   sendFriendRequestNotification,
@@ -282,40 +283,93 @@ function App() {
     friendCard.appendChild(loadingSpinner);
 
     try {
+      // Send a notification to the friend
+      const notification = {
+        title: 'Friend Activity',
+        body: `${userProfile?.username || 'Someone'} clicked on your profile!`,
+        data: {
+          type: 'friend_click',
+          fromUser: authUser?.uid,
+          friendId: friend.id
+        }
+      };
+
+      console.log('📱 Sending notification to friend:', friend.username);
+      const result = await sendNotificationToUser(friend.id, notification);
+      console.log('📱 Notification result:', result);
+
       // Simulate some processing time
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Show success state with more obvious feedback
-      friendCard.style.backgroundColor = '#065f46';
-      friendCard.style.transform = 'scale(1.02)';
-      friendCard.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.3)';
-      loadingSpinner.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #10b981;">
-          <path d="M20 6L9 17l-5-5"/>
-        </svg>
-      `;
-      loadingSpinner.style.background = 'rgba(34, 197, 94, 0.9)';
+      // Determine success state based on notification result
+      const isSuccess = result?.success !== false;
+      const isFallback = result?.message?.includes('fallback');
       
-      // Show a brief success message
-      const successMessage = document.createElement('div');
-      successMessage.textContent = 'Friend clicked!';
-      successMessage.style.cssText = `
-        position: absolute;
-        top: -40px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #10b981;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-        z-index: 20;
-        animation: fadeInOut 2s ease-in-out;
-      `;
-      friendCard.appendChild(successMessage);
+      if (isSuccess) {
+        // Show success state with more obvious feedback
+        friendCard.style.backgroundColor = '#065f46';
+        friendCard.style.transform = 'scale(1.02)';
+        friendCard.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.3)';
+        loadingSpinner.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #10b981;">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+        `;
+        loadingSpinner.style.background = 'rgba(34, 197, 94, 0.9)';
+        
+        // Show a brief success message
+        const successMessage = document.createElement('div');
+        successMessage.textContent = isFallback ? 'Friend clicked! (FCM not configured)' : 'Friend clicked!';
+        successMessage.style.cssText = `
+          position: absolute;
+          top: -40px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: ${isFallback ? '#f59e0b' : '#10b981'};
+          color: white;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 600;
+          z-index: 20;
+          animation: fadeInOut 2s ease-in-out;
+        `;
+        friendCard.appendChild(successMessage);
+      } else {
+        // Show warning state for fallback tokens
+        friendCard.style.backgroundColor = '#92400e';
+        friendCard.style.transform = 'scale(0.98)';
+        friendCard.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.3)';
+        loadingSpinner.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #f59e0b;">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        `;
+        loadingSpinner.style.background = 'rgba(245, 158, 11, 0.9)';
+        
+        // Show warning message
+        const warningMessage = document.createElement('div');
+        warningMessage.textContent = 'FCM not configured';
+        warningMessage.style.cssText = `
+          position: absolute;
+          top: -40px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #f59e0b;
+          color: white;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 600;
+          z-index: 20;
+          animation: fadeInOut 2s ease-in-out;
+        `;
+        friendCard.appendChild(warningMessage);
+      }
       
-      // Remove success indicator after 3 seconds
+      // Remove indicator after 3 seconds
       setTimeout(() => {
         friendCard.style.backgroundColor = '';
         friendCard.style.cursor = 'pointer';
@@ -325,8 +379,8 @@ function App() {
         if (friendCard.contains(loadingSpinner)) {
           friendCard.removeChild(loadingSpinner);
         }
-        if (friendCard.contains(successMessage)) {
-          friendCard.removeChild(successMessage);
+        if (friendCard.contains(successMessage || warningMessage)) {
+          friendCard.removeChild(successMessage || warningMessage);
         }
       }, 3000);
       
