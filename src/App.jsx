@@ -19,8 +19,7 @@ import {
 import {
   sendFriendRequestNotification,
   sendFriendRequestResponseNotification,
-  sendFriendAddedNotification,
-  sendWelcomeNotification
+  sendFriendAddedNotification
 } from './utils/notificationUtils.js'
 import { initializePWA } from './utils/pwaUtils.js'
 
@@ -71,21 +70,16 @@ function App() {
       console.log('Platform:', navigator.platform);
       console.log('Is mobile:', /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
       
-      // Check if service worker is registered
+      // Ensure a service worker is present
       if ('serviceWorker' in navigator) {
         try {
           const registration = await navigator.serviceWorker.getRegistration();
           console.log('Service Worker registration:', registration);
           if (!registration) {
-            console.log('No service worker registered, registering now...');
-            await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            console.log('Service worker registered successfully');
-            
-            // Wait a bit for service worker to activate
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            throw new Error('Service worker not registered');
           }
         } catch (swError) {
-          console.error('Service worker registration error:', swError);
+          console.error('Service worker lookup error:', swError);
         }
       }
       
@@ -283,9 +277,13 @@ function App() {
     friendCard.style.position = 'relative';
     friendCard.appendChild(loadingSpinner);
 
-    try {
-      // Send a notification to the friend
-      const notification = {
+      let successMessage = null;
+      let warningMessage = null;
+      let errorMessage = null;
+
+      try {
+        // Send a notification to the friend
+        const notification = {
         title: 'Friend Activity',
         body: `${userProfile?.username || 'Someone'} clicked on your profile!`,
         data: {
@@ -305,12 +303,7 @@ function App() {
       // Determine success state based on notification result
       const isSuccess = result?.success !== false;
       
-      // Create message elements
-      let successMessage = null;
-      let warningMessage = null;
-      let errorMessage = null;
-      
-      if (isSuccess) {
+        if (isSuccess) {
         // Show success state
         friendCard.style.backgroundColor = '#065f46';
         friendCard.style.transform = 'scale(0.98)';

@@ -1,29 +1,22 @@
 // Firebase messaging service worker for background notifications
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js';
+import { getMessaging, onBackgroundMessage } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-messaging-sw.js';
 
-// Your Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBmbqYQiEERc8xGn81TYcbHkErB468dDKE",
-  authDomain: "buzzy-d2b2a.firebaseapp.com",
-  projectId: "buzzy-d2b2a",
-  storageBucket: "buzzy-d2b2a.firebasestorage.app",
-  messagingSenderId: "512369963479",
-  appId: "1:512369963479:web:babd61d660cbd32beadb92"
-};
+// Load configuration shared with the main app
+const firebaseConfig = await fetch('/firebase-config.json').then(res => res.json());
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase Cloud Messaging
-const messaging = firebase.messaging();
+const messaging = getMessaging(app);
 
 console.log('🎯 === FIREBASE MESSAGING SERVICE WORKER INITIALIZED ===');
 console.log('Firebase config:', firebaseConfig);
 console.log('Messaging initialized:', !!messaging);
 
 // Handle background messages
-messaging.onBackgroundMessage((payload) => {
+onBackgroundMessage(messaging, (payload) => {
   console.log('🎯 === BACKGROUND MESSAGE RECEIVED ===');
   console.log('Payload:', payload);
   console.log('User agent:', navigator.userAgent);
@@ -82,7 +75,7 @@ self.addEventListener('notificationclick', (event) => {
   if (event.action === 'open' || !event.action) {
     // Open the app when notification is clicked
     event.waitUntil(
-      clients.matchAll({ 
+      self.clients.matchAll({
         type: 'window', 
         includeUncontrolled: true 
       }).then((clientList) => {
@@ -97,9 +90,9 @@ self.addEventListener('notificationclick', (event) => {
         }
         
         // If no window/tab is open, open a new one
-        if (clients.openWindow) {
+        if (self.clients.openWindow) {
           console.log('Opening new window');
-          return clients.openWindow('/');
+          return self.clients.openWindow('/');
         }
       }).catch((error) => {
         console.error('Error handling notification click:', error);
