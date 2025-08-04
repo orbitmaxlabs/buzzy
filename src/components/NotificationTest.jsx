@@ -3,7 +3,7 @@ import { getNotificationToken, saveNotificationToken, sendNotificationToUser, te
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 const NotificationTest = () => {
-  const { user } = useAuth();
+  const { currentUser: user } = useAuth();
   const [testStatus, setTestStatus] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
