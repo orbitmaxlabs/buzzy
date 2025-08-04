@@ -1,18 +1,11 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, addDoc, updateDoc, deleteDoc, onSnapshot, writeBatch } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBmbqYQiEERc8xGn81TYcbHkErB468dDKE",
-  authDomain: "buzzy-d2b2a.firebaseapp.com",
-  projectId: "buzzy-d2b2a",
-  storageBucket: "buzzy-d2b2a.firebasestorage.app",
-  messagingSenderId: "512369963479",
-  appId: "1:512369963479:web:babd61d660cbd32beadb92"
-};
+// Load Firebase configuration from a single shared file
+const firebaseConfig = await fetch('/firebase-config.json').then(res => res.json());
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -347,21 +340,18 @@ export const getNotificationToken = async () => {
     
     console.log('✅ Notification permission granted');
 
-    // Register service worker
+    // Use existing service worker registration
     if (!('serviceWorker' in navigator)) {
       throw new Error('Service workers are not supported in this browser');
     }
-    
-    let registration = await navigator.serviceWorker.getRegistration();
-    
+
+    const registration = await navigator.serviceWorker.getRegistration();
+
     if (!registration) {
-      console.log('Registering new service worker...');
-      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-        scope: '/'
-      });
+      throw new Error('Service worker not registered');
     }
-    
-    console.log('✅ Service worker registered:', registration);
+
+    console.log('✅ Service worker found:', registration);
     
     // Wait for service worker to be ready
     await navigator.serviceWorker.ready;
@@ -665,19 +655,17 @@ export const testVapidKey = async () => {
       }
     }
     
-    // Register service worker
+    // Use existing service worker registration
     if (!('serviceWorker' in navigator)) {
       throw new Error('Service workers are not supported');
     }
-    
-    let registration = await navigator.serviceWorker.getRegistration();
-    
+
+    const registration = await navigator.serviceWorker.getRegistration();
+
     if (!registration) {
-      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-        scope: '/'
-      });
+      throw new Error('Service worker not registered');
     }
-    
+
     await navigator.serviceWorker.ready;
     await new Promise(resolve => setTimeout(resolve, 2000));
     

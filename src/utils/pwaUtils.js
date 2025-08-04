@@ -15,11 +15,16 @@ export const registerServiceWorkers = async () => {
     
     // Register Firebase messaging service worker
     console.log('Step 2: Registering Firebase messaging service worker...');
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: '/'
-    });
-    
-    console.log('✅ Firebase messaging service worker registered:', registration);
+    let registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/',
+        type: 'module'
+      });
+      console.log('✅ Firebase messaging service worker registered:', registration);
+    } else {
+      console.log('✅ Existing service worker found:', registration);
+    }
     
     // Wait for service worker to be ready
     await navigator.serviceWorker.ready;
@@ -169,7 +174,7 @@ export const setupPWAEventListeners = () => {
   });
   
   // Listen for appinstalled event
-  window.addEventListener('appinstalled', (e) => {
+  window.addEventListener('appinstalled', () => {
     console.log('🎯 PWA installed successfully');
     window.deferredPrompt = null;
     
