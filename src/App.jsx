@@ -304,13 +304,17 @@ function App() {
       
       // Determine success state based on notification result
       const isSuccess = result?.success !== false;
-      const isFallback = result?.message?.includes('fallback');
+      
+      // Create message elements
+      let successMessage = null;
+      let warningMessage = null;
+      let errorMessage = null;
       
       if (isSuccess) {
-        // Show success state with more obvious feedback
+        // Show success state
         friendCard.style.backgroundColor = '#065f46';
-        friendCard.style.transform = 'scale(1.02)';
-        friendCard.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.3)';
+        friendCard.style.transform = 'scale(0.98)';
+        friendCard.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
         loadingSpinner.innerHTML = `
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #10b981;">
             <path d="M20 6L9 17l-5-5"/>
@@ -319,14 +323,14 @@ function App() {
         loadingSpinner.style.background = 'rgba(34, 197, 94, 0.9)';
         
         // Show a brief success message
-        const successMessage = document.createElement('div');
-        successMessage.textContent = isFallback ? 'Friend clicked! (FCM not configured)' : 'Friend clicked!';
+        successMessage = document.createElement('div');
+        successMessage.textContent = 'Friend clicked!';
         successMessage.style.cssText = `
           position: absolute;
           top: -40px;
           left: 50%;
           transform: translateX(-50%);
-          background: ${isFallback ? '#f59e0b' : '#10b981'};
+          background: #10b981;
           color: white;
           padding: 8px 16px;
           border-radius: 20px;
@@ -337,7 +341,7 @@ function App() {
         `;
         friendCard.appendChild(successMessage);
       } else {
-        // Show warning state for fallback tokens
+        // Show error state
         friendCard.style.backgroundColor = '#92400e';
         friendCard.style.transform = 'scale(0.98)';
         friendCard.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.3)';
@@ -350,9 +354,9 @@ function App() {
         `;
         loadingSpinner.style.background = 'rgba(245, 158, 11, 0.9)';
         
-        // Show warning message
-        const warningMessage = document.createElement('div');
-        warningMessage.textContent = 'FCM not configured';
+        // Show error message
+        warningMessage = document.createElement('div');
+        warningMessage.textContent = 'Notification failed';
         warningMessage.style.cssText = `
           position: absolute;
           top: -40px;
@@ -380,8 +384,11 @@ function App() {
         if (friendCard.contains(loadingSpinner)) {
           friendCard.removeChild(loadingSpinner);
         }
-        if (friendCard.contains(successMessage || warningMessage)) {
-          friendCard.removeChild(successMessage || warningMessage);
+        if (successMessage && friendCard.contains(successMessage)) {
+          friendCard.removeChild(successMessage);
+        }
+        if (warningMessage && friendCard.contains(warningMessage)) {
+          friendCard.removeChild(warningMessage);
         }
       }, 3000);
       
@@ -400,7 +407,7 @@ function App() {
       loadingSpinner.style.background = 'rgba(239, 68, 68, 0.9)';
       
       // Show error message
-      const errorMessage = document.createElement('div');
+      errorMessage = document.createElement('div');
       errorMessage.textContent = 'Error occurred';
       errorMessage.style.cssText = `
         position: absolute;
@@ -428,7 +435,7 @@ function App() {
         if (friendCard.contains(loadingSpinner)) {
           friendCard.removeChild(loadingSpinner);
         }
-        if (friendCard.contains(errorMessage)) {
+        if (errorMessage && friendCard.contains(errorMessage)) {
           friendCard.removeChild(errorMessage);
         }
       }, 3000);

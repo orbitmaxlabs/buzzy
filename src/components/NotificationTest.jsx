@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getNotificationToken, saveNotificationToken, sendNotificationToUser } from '../firebase.js';
+import { getNotificationToken, saveNotificationToken, sendNotificationToUser, testVapidKey } from '../firebase.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 const NotificationTest = () => {
@@ -19,12 +19,10 @@ const NotificationTest = () => {
       const token = await getNotificationToken();
       console.log('Token result:', token);
       
-      if (token.startsWith('mock-dev-token-')) {
-        setTestStatus('✅ Development mode: Mock token generated');
-      } else if (token.startsWith('prod-fallback-token-')) {
-        setTestStatus('⚠️ Production mode: Fallback token generated (FCM not configured)');
+      if (token && token.length > 100) {
+        setTestStatus('✅ Real FCM token generated successfully!');
       } else {
-        setTestStatus('✅ Real FCM token generated!');
+        setTestStatus('❌ Failed to generate real FCM token');
       }
       
       // Test 2: Save token
@@ -87,6 +85,32 @@ const NotificationTest = () => {
     }
   };
 
+  const testVapidKeyFunction = async () => {
+    setIsLoading(true);
+    setTestStatus('Testing VAPID key...');
+    
+    try {
+      const result = await testVapidKey();
+      
+      if (result.success) {
+        if (result.vapidKey) {
+          setTestStatus('✅ VAPID key is working! Real FCM token generated.');
+        } else {
+          setTestStatus('⚠️ VAPID key failed, but token generated without it.');
+        }
+        console.log('VAPID test result:', result);
+      } else {
+        setTestStatus('❌ VAPID key test failed');
+      }
+      
+    } catch (error) {
+      console.error('❌ VAPID key test failed:', error);
+      setTestStatus(`❌ VAPID test failed: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!user) {
     return null;
   }
@@ -133,6 +157,22 @@ const NotificationTest = () => {
         >
           {isLoading ? 'Testing...' : 'Test Friend Notification'}
         </button>
+        
+        <button 
+          onClick={testVapidKeyFunction}
+          disabled={isLoading}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#dc3545',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            marginLeft: '10px'
+          }}
+        >
+          {isLoading ? 'Testing...' : 'Test VAPID Key'}
+        </button>
       </div>
       
       {testStatus && (
@@ -157,7 +197,7 @@ const NotificationTest = () => {
         <h4>What to check:</h4>
         <ul>
           <li>✅ Real FCM token = Notifications should work</li>
-          <li>⚠️ Fallback token = FCM not configured (check Firebase Console)</li>
+          <li>❌ Failed to generate token = Check Firebase Console configuration</li>
           <li>✅ Test notification sent = Firebase Functions working</li>
           <li>⚠️ Test failed = Check browser console for errors</li>
         </ul>

@@ -324,23 +324,12 @@ export const requestNotificationPermission = async () => {
 export const getNotificationToken = async () => {
   try {
     console.log('🔔 === NOTIFICATION TOKEN DEBUG START ===');
-    console.log('Step 1: Checking if messaging is supported...');
-    console.log('Platform:', navigator.platform);
-    console.log('User agent:', navigator.userAgent);
-    console.log('Is mobile:', /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    console.log('Current URL:', window.location.href);
-    console.log('Is localhost:', window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    console.log('Is HTTPS:', window.location.protocol === 'https:');
-    
-    // Check if we're in development/localhost
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
     if (!messaging) {
-      console.error('❌ Messaging not initialized');
       throw new Error('Firebase messaging not initialized');
     }
     
-    console.log('Step 2: Checking notification permission...');
+    // Check notification permission
     if (!('Notification' in window)) {
       throw new Error('Notifications are not supported in this browser');
     }
@@ -350,7 +339,6 @@ export const getNotificationToken = async () => {
     }
     
     if (Notification.permission === 'default') {
-      console.log('Requesting notification permission...');
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
         throw new Error('Notification permission denied by user');
@@ -359,138 +347,46 @@ export const getNotificationToken = async () => {
     
     console.log('✅ Notification permission granted');
 
-    console.log('Step 3: Ensuring service worker is registered...');
-    
-    // Ensure service worker is registered
-    if ('serviceWorker' in navigator) {
-      try {
-        // First, try to get existing registration
-        let registration = await navigator.serviceWorker.getRegistration();
-        
-        if (!registration) {
-          console.log('No existing service worker, registering new one...');
-          registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-            scope: '/'
-          });
-        }
-        
-        console.log('✅ Service worker registered:', registration);
-        
-        // Wait for service worker to be ready
-        await navigator.serviceWorker.ready;
-        console.log('✅ Service worker is ready');
-        
-        // Wait a bit for everything to settle
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } catch (swError) {
-        console.error('❌ Service worker registration failed:', swError);
-        throw new Error('Failed to register service worker for notifications');
-      }
-    } else {
+    // Register service worker
+    if (!('serviceWorker' in navigator)) {
       throw new Error('Service workers are not supported in this browser');
     }
-
-    console.log('Step 4: Getting notification token...');
     
-    // If we're on localhost, return a mock token for development
-    if (isLocalhost) {
-      console.log('🔄 Development environment detected (localhost)');
-      console.log('⚠️ Firebase Cloud Messaging requires HTTPS in production');
-      console.log('📝 Returning mock token for development testing');
-      
-      const mockToken = 'mock-dev-token-' + Date.now();
-      console.log('✅ Mock token generated for development:', mockToken);
-      console.log('🔔 === NOTIFICATION TOKEN DEBUG END: SUCCESS (DEV) ===');
-      return mockToken;
-    }
+    let registration = await navigator.serviceWorker.getRegistration();
     
-    // For production, try to get a real token
-    console.log('🌐 Production environment detected');
-    console.log('🔑 Attempting to get real FCM token...');
-    
-    // Check if we're on a supported domain
-    const currentDomain = window.location.hostname;
-    console.log('Current domain:', currentDomain);
-    
-    // List of domains that should work with FCM
-    const supportedDomains = ['www.adrit.gay', 'adrit.gay', 'localhost', '127.0.0.1'];
-    const isSupportedDomain = supportedDomains.includes(currentDomain);
-    
-    if (!isSupportedDomain) {
-      console.log('⚠️ Domain not in supported list, using fallback token');
-      const fallbackToken = 'prod-fallback-token-' + Date.now();
-      console.log('✅ Fallback token generated:', fallbackToken);
-      console.log('🔔 === NOTIFICATION TOKEN DEBUG END: FALLBACK ===');
-      return fallbackToken;
-    }
-    
-    // Try multiple approaches for token generation (production only)
-    let token;
-    let lastError;
-    
-    // Method 1: Try with VAPID key and service worker
-    try {
-      console.log('Method 1: Attempting to get token with VAPID key and service worker...');
-      const registration = await navigator.serviceWorker.getRegistration();
-      console.log('Service worker registration for token:', registration);
-      
-      token = await getToken(messaging, {
-        vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
-        serviceWorkerRegistration: registration
+    if (!registration) {
+      console.log('Registering new service worker...');
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/'
       });
-      console.log('✅ Method 1 succeeded');
-    } catch (error1) {
-      console.log('❌ Method 1 failed:', error1.message);
-      console.log('Error details:', error1);
-      lastError = error1;
     }
     
-    // Method 2: Try with VAPID key only
+    console.log('✅ Service worker registered:', registration);
+    
+    // Wait for service worker to be ready
+    await navigator.serviceWorker.ready;
+    console.log('✅ Service worker is ready');
+    
+    // Wait for everything to settle
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Get real FCM token
+    console.log('🌐 Getting real FCM token...');
+    
+    const token = await getToken(messaging, {
+      vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
+      serviceWorkerRegistration: registration
+    });
+    
     if (!token) {
-      try {
-        console.log('Method 2: Attempting to get token with VAPID key only...');
-        token = await getToken(messaging, {
-          vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM'
-        });
-        console.log('✅ Method 2 succeeded');
-      } catch (error2) {
-        console.log('❌ Method 2 failed:', error2.message);
-        console.log('Error details:', error2);
-        lastError = error2;
-      }
+      throw new Error('Failed to generate FCM token');
     }
     
-    // Method 3: Try without VAPID key
-    if (!token) {
-      try {
-        console.log('Method 3: Attempting to get token without VAPID key...');
-        token = await getToken(messaging);
-        console.log('✅ Method 3 succeeded');
-      } catch (error3) {
-        console.log('❌ Method 3 failed:', error3.message);
-        console.log('Error details:', error3);
-        lastError = error3;
-      }
-    }
-
-    if (token) {
-      console.log('✅ Token generated successfully:', token.substring(0, 20) + '...');
-      console.log('Full token length:', token.length);
-      console.log('🔔 === NOTIFICATION TOKEN DEBUG END: SUCCESS ===');
-      return token;
-    } else {
-      console.log('❌ All methods failed to generate token');
-      console.log('Last error:', lastError);
-      console.log('🔔 === NOTIFICATION TOKEN DEBUG END: FAILED ===');
-      
-      // For production, if we can't get a real token, return a mock token
-      // This allows the app to work even if FCM is not properly configured
-      console.log('🔄 Falling back to mock token for production');
-      const fallbackToken = 'prod-fallback-token-' + Date.now();
-      console.log('✅ Fallback token generated:', fallbackToken);
-      console.log('🔔 === NOTIFICATION TOKEN DEBUG END: FALLBACK ===');
-      return fallbackToken;
-    }
+    console.log('✅ Real FCM token generated successfully:', token.substring(0, 20) + '...');
+    console.log('Full token length:', token.length);
+    console.log('🔔 === NOTIFICATION TOKEN DEBUG END: SUCCESS ===');
+    return token;
+    
   } catch (error) {
     console.error('🔔 === NOTIFICATION TOKEN DEBUG ERROR ===', error);
     console.error('Error details:', {
@@ -507,22 +403,6 @@ export const saveNotificationToken = async (uid, token) => {
     console.log('💾 === SAVE TOKEN DEBUG START ===');
     console.log('User UID:', uid);
     console.log('Token (first 20 chars):', token.substring(0, 20) + '...');
-    console.log('Is mock token:', token.startsWith('mock-dev-token-'));
-    console.log('Is fallback token:', token.startsWith('prod-fallback-token-'));
-    
-    // If it's a mock token in development, just log it and return
-    if (token.startsWith('mock-dev-token-')) {
-      console.log('🔄 Development mode: Mock token detected');
-      console.log('📝 Skipping Firestore save for mock token');
-      console.log('💾 === SAVE TOKEN DEBUG END: SUCCESS (DEV) ===');
-      return;
-    }
-    
-    // If it's a fallback token in production, save it to Firestore
-    if (token.startsWith('prod-fallback-token-')) {
-      console.log('🔄 Production mode: Fallback token detected');
-      console.log('📝 Saving fallback token to Firestore for testing');
-    }
     
     const tokenRef = doc(db, 'notificationTokens', uid);
     console.log('Token document reference:', tokenRef.path);
@@ -530,8 +410,7 @@ export const saveNotificationToken = async (uid, token) => {
     const tokenData = {
       token,
       createdAt: new Date(),
-      lastUsed: new Date(),
-      isFallback: token.startsWith('prod-fallback-token-')
+      lastUsed: new Date()
     };
     
     console.log('Token data to save:', tokenData);
@@ -578,7 +457,6 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       console.log('❌ User has no notification token in Firestore');
       console.log('📱 === SEND NOTIFICATION DEBUG END: NO TOKEN ===');
       
-      // Instead of throwing an error, return a graceful response
       return { 
         success: false, 
         message: 'User has no notification token. They may not have enabled notifications or the token generation failed.',
@@ -590,8 +468,7 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     console.log('Token data retrieved:', {
       token: tokenData.token ? tokenData.token.substring(0, 20) + '...' : 'null',
       createdAt: tokenData.createdAt,
-      lastUsed: tokenData.lastUsed,
-      isFallback: tokenData.isFallback || false
+      lastUsed: tokenData.lastUsed
     });
     
     const token = tokenData.token;
@@ -601,26 +478,6 @@ export const sendNotificationToUser = async (targetUid, notification) => {
         success: false, 
         message: 'Token is null or empty',
         reason: 'empty_token'
-      };
-    }
-    
-    // Check if it's a mock token in development
-    if (token.startsWith('mock-dev-token-')) {
-      console.log('🔄 Development mode: Mock token detected');
-      console.log('📝 Skipping Firebase Function call for mock token');
-      console.log('📱 === SEND NOTIFICATION DEBUG END: SUCCESS (DEV) ===');
-      return { success: true, message: 'Mock notification sent in development' };
-    }
-    
-    // Check if it's a fallback token in production
-    if (token.startsWith('prod-fallback-token-')) {
-      console.log('🔄 Production mode: Fallback token detected');
-      console.log('📝 Cannot send real notification with fallback token');
-      console.log('📱 === SEND NOTIFICATION DEBUG END: FALLBACK ===');
-      return { 
-        success: false, 
-        message: 'Cannot send notification with fallback token. FCM not properly configured. Please check Firebase Console configuration.',
-        reason: 'fallback_token'
       };
     }
     
@@ -662,9 +519,6 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     const result = await response.json();
     console.log('✅ Firebase Function success response:', result);
     
-    // Note: Notification storage in Firestore is handled by the Firebase Function
-    // No need to store it client-side to avoid permissions issues
-
     console.log('📱 === SEND NOTIFICATION DEBUG END: SUCCESS ===');
     return { ...result, success: true };
   } catch (error) {
@@ -782,6 +636,92 @@ export const markMessageAsRead = async (messageId) => {
     });
   } catch (error) {
     console.error('Error marking message as read:', error);
+    throw error;
+  }
+};
+
+// Test VAPID key function
+export const testVapidKey = async () => {
+  try {
+    console.log('🧪 === VAPID KEY TEST START ===');
+    
+    if (!messaging) {
+      throw new Error('Firebase messaging not initialized');
+    }
+    
+    // Check notification permission
+    if (!('Notification' in window)) {
+      throw new Error('Notifications are not supported in this browser');
+    }
+    
+    if (Notification.permission === 'denied') {
+      throw new Error('Notification permission is denied');
+    }
+    
+    if (Notification.permission === 'default') {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        throw new Error('Notification permission denied by user');
+      }
+    }
+    
+    // Register service worker
+    if (!('serviceWorker' in navigator)) {
+      throw new Error('Service workers are not supported');
+    }
+    
+    let registration = await navigator.serviceWorker.getRegistration();
+    
+    if (!registration) {
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/'
+      });
+    }
+    
+    await navigator.serviceWorker.ready;
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Test current VAPID key
+    console.log('Testing current VAPID key...');
+    const currentVapidKey = 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM';
+    
+    try {
+      const token = await getToken(messaging, {
+        vapidKey: currentVapidKey,
+        serviceWorkerRegistration: registration
+      });
+      
+      if (token && token.length > 100) {
+        console.log('✅ Current VAPID key is working!');
+        console.log('Token length:', token.length);
+        console.log('Token preview:', token.substring(0, 20) + '...');
+        return { success: true, token, vapidKey: currentVapidKey };
+      } else {
+        throw new Error('Token is too short or invalid');
+      }
+    } catch (error) {
+      console.log('❌ Current VAPID key failed:', error.message);
+      
+      // Try without VAPID key to see if that works
+      try {
+        console.log('Testing without VAPID key...');
+        const tokenWithoutVapid = await getToken(messaging, {
+          serviceWorkerRegistration: registration
+        });
+        
+        if (tokenWithoutVapid && tokenWithoutVapid.length > 100) {
+          console.log('✅ Token generated without VAPID key');
+          return { success: true, token: tokenWithoutVapid, vapidKey: null };
+        }
+      } catch (error2) {
+        console.log('❌ Token generation failed completely:', error2.message);
+      }
+      
+      throw new Error('VAPID key is invalid or not configured properly');
+    }
+    
+  } catch (error) {
+    console.error('🧪 === VAPID KEY TEST ERROR ===', error);
     throw error;
   }
 };
