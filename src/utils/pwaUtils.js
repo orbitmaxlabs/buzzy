@@ -13,9 +13,10 @@ export const registerServiceWorkers = async () => {
     // Register PWA service worker (handled by Vite PWA plugin)
     console.log('Step 1: PWA service worker registration handled by Vite PWA plugin');
     
-    // Register Firebase messaging service worker
+    // Register Firebase messaging service worker (ensure correct worker is used)
     console.log('Step 2: Registering Firebase messaging service worker...');
-    let registration = await navigator.serviceWorker.getRegistration();
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    let registration = registrations.find(r => r.active?.scriptURL.includes('firebase-messaging-sw.js'));
     if (!registration) {
       registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
         scope: '/',
@@ -23,18 +24,18 @@ export const registerServiceWorkers = async () => {
       });
       console.log('✅ Firebase messaging service worker registered:', registration);
     } else {
-      console.log('✅ Existing service worker found:', registration);
+      console.log('✅ Existing Firebase messaging service worker found:', registration);
     }
-    
-    // Wait for service worker to be ready
+
+    // Wait for the service worker system to be ready
     await navigator.serviceWorker.ready;
-    console.log('✅ Service worker is ready');
-    
-    // Set up update handling
+    console.log('✅ Firebase messaging service worker is ready');
+
+    // Set up update handling for the Firebase messaging service worker
     registration.addEventListener('updatefound', () => {
       console.log('🔄 Service worker update found');
       const newWorker = registration.installing;
-      
+
       newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
           console.log('🔄 New service worker installed, ready for activation');

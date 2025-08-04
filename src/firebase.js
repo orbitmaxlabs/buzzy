@@ -18,6 +18,21 @@ export const googleProvider = new GoogleAuthProvider();
 // Initialize Firebase Cloud Messaging
 export const messaging = getMessaging(app);
 
+// Ensure we always use the Firebase messaging service worker
+const getMessagingRegistration = async () => {
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  let registration = registrations.find(r => r.active?.scriptURL.includes('firebase-messaging-sw.js'));
+
+  if (!registration) {
+    registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/',
+      type: 'module'
+    });
+  }
+
+  return registration;
+};
+
 // Random emoji generator for profile pictures
 const EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '👻', '👽', '🤖', '😈', '👿', '👹', '👺', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🐱', '🐶', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🐘', '🦛', '🦏', '🐪', '🐫', '🦙', '🦒', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦚', '🦜', '🦢', '🦩', '🕊️', '🐇', '🦝', '🦨', '🦡', '🦫', '🦦', '🦥', '🐁', '🐀', '🐇', '🐿️', '🦔', '🐉', '🐲', '🌵', '🎄', '🌲', '🌳', '🌴', '🌱', '🌿', '☘️', '🍀', '🎍', '🎋', '🍃', '🍂', '🍁', '🍄', '🌾', '💐', '🌷', '🌹', '🥀', '🌺', '🌻', '🌼', '🌸', '🌼', '🌻', '🌺', '🥀', '🌹', '🌷', '💐', '🌾', '🍄', '🍁', '🍂', '🍃', '🎋', '🎍', '🍀', '☘️', '🌿', '🌱', '🌴', '🌳', '🌲', '🎄', '🌵', '🐲', '🐉', '🦔', '🐿️', '🐇', '🐀', '🐁', '🦥', '🦦', '🦫', '🦡', '🦨', '🦝', '🐇', '🕊️', '🦩', '🦢', '🦜', '🦚', '🦃', '🐓', '🐈‍⬛', '🐈', '🐕‍🦺', '🦮', '🐩', '🐕', '🦌', '🐐', '🐑', '🐏', '🐖', '🐎', '🐄', '🐂', '🐃', '🦒', '🦙', '🐫', '🐪', '🦏', '🦛', '🐘', '🦍', '🦓', '🐆', '🐅', '🐊', '🦈', '🐋', '🐳', '🐬', '🐟', '🐠', '🐡', '🦀', '🦞', '🦐', '🦑', '🐙', '🦕', '🦖', '🦎', '🐍', '🐢', '🦂', '🕸️', '🕷️', '🦗', '🦟', '🐜', '🐞', '🐌', '🦋', '🐛', '🐝', '🦄', '🐴', '🐗', '🐺', '🦇', '🦉', '🦅', '🦆', '🐥', '🐣', '🐤', '🐦', '🐧', '🐔', '🐒', '🙊', '🙉', '🙈', '🐵', '🐸', '🐷', '🐮', '🦁', '🐯', '🐨', '🐼', '🐻', '🦊', '🐰', '🐹', '🐭', '🐶', '🐱', '😾', '😿', '🙀', '😽', '😼', '😻', '😹', '😸', '😺', '🤖', '👽', '👻', '👺', '👹', '🤠', '🤑', '🤕', '🤒', '😷', '🤧', '🤮', '🤢', '🥴', '🤐', '😵', '😪', '🤤', '😴', '🥱', '😲', '😮', '😧', '😦', '😯', '😑', '😐', '😶', '🤥', '🤫', '🤭', '🤔', '🤗', '😓', '😥', '😰', '😨', '😱', '🥶', '🥵', '😳', '🤯', '🤬', '😡', '😠', '😤', '😭', '😢', '🥺', '😩', '😫', '😖', '😣', '☹️', '🙁', '😕', '😟', '😔', '😞', '😒', '😏', '🥳', '🤩', '😎', '🤓', '🧐', '🤨', '🤪', '😜', '😝', '😛', '😋', '😚', '😙', '😗', '😘', '🥰', '😍', '😌', '😉', '🙃', '🙂', '😇', '😊', '🤣', '😂', '😅', '😆', '😁', '😄', '😃', '😀'];
 
@@ -340,22 +355,17 @@ export const getNotificationToken = async () => {
     
     console.log('✅ Notification permission granted');
 
-    // Use existing service worker registration
+    // Use Firebase messaging service worker registration
     if (!('serviceWorker' in navigator)) {
       throw new Error('Service workers are not supported in this browser');
     }
+    const registration = await getMessagingRegistration();
 
-    const registration = await navigator.serviceWorker.getRegistration();
+    console.log('✅ Firebase messaging service worker:', registration);
 
-    if (!registration) {
-      throw new Error('Service worker not registered');
-    }
-
-    console.log('✅ Service worker found:', registration);
-    
-    // Wait for service worker to be ready
+    // Wait for the service worker system to be ready
     await navigator.serviceWorker.ready;
-    console.log('✅ Service worker is ready');
+    console.log('✅ Service worker system is ready');
     
     // Wait for everything to settle
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -655,16 +665,11 @@ export const testVapidKey = async () => {
       }
     }
     
-    // Use existing service worker registration
+    // Use Firebase messaging service worker registration
     if (!('serviceWorker' in navigator)) {
       throw new Error('Service workers are not supported');
     }
-
-    const registration = await navigator.serviceWorker.getRegistration();
-
-    if (!registration) {
-      throw new Error('Service worker not registered');
-    }
+    const registration = await getMessagingRegistration();
 
     await navigator.serviceWorker.ready;
     await new Promise(resolve => setTimeout(resolve, 2000));
