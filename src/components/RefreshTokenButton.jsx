@@ -42,23 +42,17 @@ const RefreshTokenButton = () => {
       // Step 3: Ensure service worker is registered
       console.log('Step 3: Ensuring service worker is registered...');
       if ('serviceWorker' in navigator) {
-        try {
-          // Register the Firebase messaging service worker
-          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-            scope: '/'
-          });
-          console.log('✅ Service worker registered:', registration);
-          
-          // Wait for service worker to be ready
-          await navigator.serviceWorker.ready;
-          console.log('✅ Service worker is ready');
-          
-          // Wait a bit for everything to settle
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } catch (swError) {
-          console.error('❌ Service worker registration failed:', swError);
-          throw new Error('Failed to register service worker for notifications');
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) {
+          throw new Error('Service worker not found');
         }
+
+        // Wait for service worker to be ready
+        await navigator.serviceWorker.ready;
+        console.log('✅ Service worker is ready');
+
+        // Wait a bit for everything to settle
+        await new Promise(resolve => setTimeout(resolve, 2000));
       } else {
         throw new Error('Service workers are not supported in this browser');
       }

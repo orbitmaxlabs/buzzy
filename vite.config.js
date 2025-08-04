@@ -228,23 +228,6 @@ export default defineConfig({
       },
       devOptions: {
         enabled: true
-      },
-      // Include Firebase messaging service worker
-      includeAssets: ['firebase-messaging-sw.js'],
-      // Register the Firebase messaging service worker
-      registerSWPlugin: {
-        onRegisteredSW: (swUrl, r) => {
-          // Register Firebase messaging service worker
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-              scope: '/'
-            }).then((registration) => {
-              console.log('Firebase messaging service worker registered:', registration);
-            }).catch((error) => {
-              console.error('Firebase messaging service worker registration failed:', error);
-            });
-          }
-        }
       }
     })
   ]
