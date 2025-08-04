@@ -1,68 +1,68 @@
+/* eslint-env serviceworker */
+/* global firebase importScripts */
+
 // Firebase messaging service worker for background notifications
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js';
-import { getMessaging, onBackgroundMessage } from 'https://www.gstatic.com/firebasejs/12.0.0/firebase-messaging-sw.js';
+importScripts('https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.0.0/firebase-messaging-compat.js');
 
-// Load configuration shared with the main app
-const firebaseConfig = await fetch('/firebase-config.json').then(res => res.json());
+(async () => {
+  const firebaseConfig = await fetch('/firebase-config.json').then(res => res.json());
+  firebase.initializeApp(firebaseConfig);
+  const messaging = firebase.messaging();
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+  console.log('🎯 === FIREBASE MESSAGING SERVICE WORKER INITIALIZED ===');
+  console.log('Firebase config:', firebaseConfig);
+  console.log('Messaging initialized:', !!messaging);
 
-// Initialize Firebase Cloud Messaging
-const messaging = getMessaging(app);
+  // Handle background messages
+  messaging.onBackgroundMessage((payload) => {
+    console.log('🎯 === BACKGROUND MESSAGE RECEIVED ===');
+    console.log('Payload:', payload);
+    console.log('User agent:', navigator.userAgent);
+    console.log('Platform:', navigator.platform);
+    console.log('Service Worker state:', self.registration ? 'Active' : 'Inactive');
 
-console.log('🎯 === FIREBASE MESSAGING SERVICE WORKER INITIALIZED ===');
-console.log('Firebase config:', firebaseConfig);
-console.log('Messaging initialized:', !!messaging);
+    const notificationTitle = payload.notification?.title || 'New Notification';
+    const notificationOptions = {
+      body: payload.notification?.body || '',
+      icon: '/android/android-launchericon-192-192.png',
+      badge: '/android/android-launchericon-48-48.png',
+      data: payload.data || {},
+      requireInteraction: true,
+      tag: 'buzzy-notification',
+      renotify: true,
+      silent: false,
+      vibrate: [200, 100, 200],
+      actions: [
+        {
+          action: 'open',
+          title: 'Open App',
+          icon: '/android/android-launchericon-48-48.png'
+        },
+        {
+          action: 'close',
+          title: 'Close',
+          icon: '/android/android-launchericon-48-48.png'
+        }
+      ],
+      // Add more notification options for better PWA experience
+      dir: 'auto',
+      lang: 'en',
+      timestamp: Date.now()
+    };
 
-// Handle background messages
-onBackgroundMessage(messaging, (payload) => {
-  console.log('🎯 === BACKGROUND MESSAGE RECEIVED ===');
-  console.log('Payload:', payload);
-  console.log('User agent:', navigator.userAgent);
-  console.log('Platform:', navigator.platform);
-  console.log('Service Worker state:', self.registration ? 'Active' : 'Inactive');
+    console.log('Showing notification with options:', notificationOptions);
 
-  const notificationTitle = payload.notification?.title || 'New Notification';
-  const notificationOptions = {
-    body: payload.notification?.body || '',
-    icon: '/android/android-launchericon-192-192.png',
-    badge: '/android/android-launchericon-48-48.png',
-    data: payload.data || {},
-    requireInteraction: true,
-    tag: 'buzzy-notification',
-    renotify: true,
-    silent: false,
-    vibrate: [200, 100, 200],
-    actions: [
-      {
-        action: 'open',
-        title: 'Open App',
-        icon: '/android/android-launchericon-48-48.png'
-      },
-      {
-        action: 'close',
-        title: 'Close',
-        icon: '/android/android-launchericon-48-48.png'
-      }
-    ],
-    // Add more notification options for better PWA experience
-    dir: 'auto',
-    lang: 'en',
-    timestamp: Date.now()
-  };
-
-  console.log('Showing notification with options:', notificationOptions);
-
-  // Show the notification
-  return self.registration.showNotification(notificationTitle, notificationOptions)
-    .then(() => {
-      console.log('✅ Notification shown successfully');
-    })
-    .catch((error) => {
-      console.error('❌ Error showing notification:', error);
-    });
-});
+    // Show the notification
+    self.registration.showNotification(notificationTitle, notificationOptions)
+      .then(() => {
+        console.log('✅ Notification shown successfully');
+      })
+      .catch((error) => {
+        console.error('❌ Error showing notification:', error);
+      });
+  });
+})();
 
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
@@ -193,8 +193,8 @@ self.addEventListener('message', (event) => {
   console.log('🎯 === MESSAGE FROM MAIN THREAD ===');
   console.log('Event:', event);
   console.log('Data:', event.data);
-  
+
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-}); 
+});
