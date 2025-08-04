@@ -5,17 +5,28 @@
 importScripts('https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/12.0.0/firebase-messaging-compat.js');
 
-(async () => {
-  const firebaseConfig = await fetch('/firebase-config.json').then(res => res.json());
-  firebase.initializeApp(firebaseConfig);
-  const messaging = firebase.messaging();
+// Initialize Firebase synchronously to ensure event listeners are registered
+// during the service worker's initial evaluation. Using async initialization
+// can cause Firebase to miss push event handlers, resulting in registration
+// errors in some browsers.
+const firebaseConfig = {
+  apiKey: 'AIzaSyBmbqYQiEERc8xGn81TYcbHkErB468dDKE',
+  authDomain: 'buzzy-d2b2a.firebaseapp.com',
+  projectId: 'buzzy-d2b2a',
+  storageBucket: 'buzzy-d2b2a.firebasestorage.app',
+  messagingSenderId: '512369963479',
+  appId: '1:512369963479:web:babd61d660cbd32beadb92'
+};
 
-  console.log('🎯 === FIREBASE MESSAGING SERVICE WORKER INITIALIZED ===');
-  console.log('Firebase config:', firebaseConfig);
-  console.log('Messaging initialized:', !!messaging);
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
 
-  // Handle background messages
-  messaging.onBackgroundMessage((payload) => {
+console.log('🎯 === FIREBASE MESSAGING SERVICE WORKER INITIALIZED ===');
+console.log('Firebase config:', firebaseConfig);
+console.log('Messaging initialized:', !!messaging);
+
+// Handle background messages
+messaging.onBackgroundMessage((payload) => {
     console.log('🎯 === BACKGROUND MESSAGE RECEIVED ===');
     console.log('Payload:', payload);
     console.log('User agent:', navigator.userAgent);
@@ -61,8 +72,7 @@ importScripts('https://www.gstatic.com/firebasejs/12.0.0/firebase-messaging-comp
       .catch((error) => {
         console.error('❌ Error showing notification:', error);
       });
-  });
-})();
+});
 
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
