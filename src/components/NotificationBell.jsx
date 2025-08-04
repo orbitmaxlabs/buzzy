@@ -3,7 +3,7 @@ import { useNotifications } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const NotificationBell = () => {
-  const { user } = useAuth();
+  const { currentUser: user } = useAuth();
   const { 
     permission, 
     notifications, 

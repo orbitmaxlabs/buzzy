@@ -22,7 +22,7 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const [permission, setPermission] = useState('default');
   const [token, setToken] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -45,7 +45,7 @@ export const NotificationProvider = ({ children }) => {
       const granted = await requestNotificationPermission();
       setPermission(granted ? 'granted' : 'denied');
       
-      if (granted && user) {
+      if (granted && currentUser) {
         await setupNotifications();
       }
       
@@ -63,9 +63,9 @@ export const NotificationProvider = ({ children }) => {
   const setupNotifications = async () => {
     try {
       console.log('🎯 === NOTIFICATION SETUP DEBUG START ===');
-      console.log('Current user:', user?.uid, user?.email);
-      
-      if (!user) {
+      console.log('Current user:', currentUser?.uid, currentUser?.email);
+
+      if (!currentUser) {
         console.log('❌ No user found, skipping setup');
         return;
       }
@@ -96,7 +96,7 @@ export const NotificationProvider = ({ children }) => {
       
       console.log('Step 3: Saving token to Firestore...');
       // Save token to Firestore
-      await saveNotificationToken(user.uid, notificationToken);
+      await saveNotificationToken(currentUser.uid, notificationToken);
       console.log('✅ Token saved to Firestore');
       
       console.log('Step 4: Loading existing notifications...');
@@ -145,9 +145,9 @@ export const NotificationProvider = ({ children }) => {
   // Load user notifications
   const loadNotifications = async () => {
     try {
-      if (!user) return;
+      if (!currentUser) return;
       
-      const userNotifications = await getUserNotifications(user.uid);
+      const userNotifications = await getUserNotifications(currentUser.uid);
       setNotifications(userNotifications);
     } catch (error) {
       console.error('Error loading notifications:', error);
@@ -177,19 +177,19 @@ export const NotificationProvider = ({ children }) => {
 
   // Setup notifications when user logs in
   useEffect(() => {
-    if (user && permission === 'granted') {
+    if (currentUser && permission === 'granted') {
       setupNotifications();
     }
-  }, [user, permission]);
+  }, [currentUser, permission]);
 
   // Cleanup when user logs out
   useEffect(() => {
-    if (!user && token) {
-      removeNotificationToken(user?.uid);
+    if (!currentUser && token) {
+      removeNotificationToken(currentUser?.uid);
       setToken(null);
       setNotifications([]);
     }
-  }, [user, token]);
+  }, [currentUser, token]);
 
   const value = {
     permission,
