@@ -19,8 +19,7 @@ export const registerServiceWorkers = async () => {
     let registration = registrations.find(r => r.active?.scriptURL.includes('firebase-messaging-sw.js'));
     if (!registration) {
       registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-        scope: '/',
-        type: 'module'
+        scope: '/'
       });
       console.log('✅ Firebase messaging service worker registered:', registration);
     } else {

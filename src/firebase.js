@@ -25,8 +25,7 @@ const getMessagingRegistration = async () => {
 
   if (!registration) {
     registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: '/',
-      type: 'module'
+      scope: '/'
     });
   }
 
