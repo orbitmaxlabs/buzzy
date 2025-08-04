@@ -4,6 +4,7 @@ import { useAuth } from './contexts/AuthContext.jsx'
 import NotificationBell from './components/NotificationBell.jsx'
 import RefreshTokenButton from './components/RefreshTokenButton.jsx'
 import PWAInstallPrompt from './components/PWAInstallPrompt.jsx'
+import NotificationTest from './components/NotificationTest.jsx'
 import { 
   searchUsersByUsername, 
   sendFriendRequest, 
@@ -797,6 +798,8 @@ function App() {
         </main>
       )}
 
+      {/* Notification Test Component - Remove this after testing */}
+      <NotificationTest />
       
     </div>
   )
