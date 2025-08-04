@@ -370,7 +370,7 @@ export const getNotificationToken = async () => {
     // Wait for everything to settle
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Get real FCM token
+    // Get real FCM token - NO FALLBACK LOGIC
     console.log('🌐 Getting real FCM token...');
     
     const token = await getToken(messaging, {
