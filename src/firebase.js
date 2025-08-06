@@ -101,16 +101,23 @@ export const updateUserProfile = async (uid, updates) => {
 };
 
 export const searchUsersByUsername = async (username) => {
-  const usersRef = collection(db, 'users');
-  const q = query(usersRef, where('username', '>=', username), where('username', '<=', username + '\uf8ff'));
-  const querySnapshot = await getDocs(q);
-  
-  const users = [];
-  querySnapshot.forEach((doc) => {
-    users.push({ id: doc.id, ...doc.data() });
-  });
-  
-  return users;
+  try {
+    console.log('🔍 Searching users by username:', username);
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('username', '>=', username), where('username', '<=', username + '\uf8ff'));
+    const querySnapshot = await getDocs(q);
+    
+    const users = [];
+    querySnapshot.forEach((doc) => {
+      users.push({ id: doc.id, ...doc.data() });
+    });
+    
+    console.log('🔍 Search results:', users.length, 'users found');
+    return users;
+  } catch (error) {
+    console.error('❌ Error searching users:', error);
+    return [];
+  }
 };
 
 // Friend requests functions
@@ -325,58 +332,84 @@ export const requestNotificationPermission = async () => {
 
 export const getNotificationToken = async () => {
   try {
+    console.log('🔑 === FCM TOKEN GENERATION START ===');
+    
     if (!messaging) {
+      console.log('⚠️ Messaging not initialized, attempting to reinitialize...');
       try {
         messaging = getMessaging(app);
+        console.log('✅ Messaging reinitialized successfully');
       } catch (error) {
-        console.error('Failed to reinitialize Firebase messaging:', error);
+        console.error('❌ Failed to reinitialize Firebase messaging:', error);
         throw new Error('Firebase messaging not initialized');
       }
     }
     
+    console.log('🔍 Checking browser notification support...');
     if (!('Notification' in window)) {
+      console.error('❌ Notifications not supported in this browser');
       throw new Error('Notifications are not supported in this browser');
     }
     
+    console.log('🔍 Checking notification permission...');
     if (Notification.permission === 'denied') {
+      console.error('❌ Notification permission denied');
       throw new Error('Notification permission is denied. Please enable notifications in your browser settings.');
     }
     
     if (Notification.permission === 'default') {
+      console.log('🔔 Requesting notification permission...');
       const permission = await Notification.requestPermission();
+      console.log('📱 Permission result:', permission);
       if (permission !== 'granted') {
+        console.error('❌ Notification permission denied by user');
         throw new Error('Notification permission denied by user');
       }
     }
     
-    // Register service worker if needed
+    console.log('🔍 Checking service worker support...');
     if (!('serviceWorker' in navigator)) {
+      console.error('❌ Service workers not supported');
       throw new Error('Service workers are not supported in this browser');
     }
     
+    console.log('🔍 Registering service worker...');
     let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
     if (!registration) {
+      console.log('📝 Service worker not found, registering new one...');
       registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
         scope: '/'
       });
+      console.log('✅ Service worker registered:', registration);
+    } else {
+      console.log('✅ Service worker already registered:', registration);
     }
     
-    // Wait for service worker to be ready
+    console.log('⏳ Waiting for service worker to be ready...');
     await navigator.serviceWorker.ready;
+    console.log('✅ Service worker is ready');
     
-    // Get FCM token
+    console.log('🔑 Generating FCM token with VAPID key...');
     const token = await getToken(messaging, {
       vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
       serviceWorkerRegistration: registration
     });
     
     if (!token) {
+      console.error('❌ Failed to generate FCM token - token is null or empty');
       throw new Error('Failed to generate FCM token - token is null or empty');
     }
     
+    console.log('✅ FCM token generated successfully:', token.substring(0, 20) + '...');
+    console.log('🔑 === FCM TOKEN GENERATION COMPLETE ===');
     return token;
   } catch (error) {
-    console.error('Error getting notification token:', error);
+    console.error('❌ Error getting notification token:', error);
+    console.error('🔍 Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 };
@@ -409,11 +442,15 @@ export const removeNotificationToken = async (uid) => {
 
 export const sendNotificationToUser = async (targetUid, notification) => {
   try {
-    // Get the user's notification token from their profile
+    console.log('📱 === SENDING NOTIFICATION ===');
+    console.log('👤 Target user:', targetUid);
+    console.log('📝 Notification:', notification);
+    
     const userRef = doc(db, 'users', targetUid);
     const userSnap = await getDoc(userRef);
     
     if (!userSnap.exists()) {
+      console.log('❌ User not found');
       return { 
         success: false, 
         message: 'User not found',
@@ -424,7 +461,15 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     const userData = userSnap.data();
     const token = userData.notificationToken;
     
+    console.log('🔍 User notification data:', {
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      notificationEnabled: userData.notificationEnabled,
+      permission: userData.notificationPermission
+    });
+    
     if (!token) {
+      console.log('❌ User has no notification token');
       return { 
         success: false, 
         message: 'User has no notification token',
@@ -433,6 +478,7 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     }
     
     if (!userData.notificationEnabled) {
+      console.log('❌ User has notifications disabled');
       return { 
         success: false, 
         message: 'User has notifications disabled',
@@ -440,7 +486,7 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       };
     }
     
-    // Send notification via Firebase Functions
+    console.log('📤 Sending notification via Firebase Functions...');
     const requestBody = {
       targetUid,
       title: notification.title,
@@ -448,16 +494,20 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       data: notification.data || {}
     };
     
+    console.log('📤 Request body:', requestBody);
+    
     const response = await fetch('https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
+    console.log('📥 Response status:', response.status);
+    console.log('📥 Response ok:', response.ok);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('❌ Function error:', errorText);
       return { 
         success: false, 
         message: `Failed to send notification: ${response.status} ${errorText}`,
@@ -466,8 +516,10 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     }
 
     const result = await response.json();
+    console.log('✅ Notification sent successfully:', result);
     return { ...result, success: true };
   } catch (error) {
+    console.error('❌ Error sending notification:', error);
     return { 
       success: false, 
       message: `Error sending notification: ${error.message}`,
@@ -583,20 +635,23 @@ export const markMessageAsRead = async (messageId) => {
 // Comprehensive notification setup function
 export const setupUserNotifications = async (uid) => {
   try {
-    console.log('🔔 Setting up notifications for user:', uid);
+    console.log('🔔 === NOTIFICATION SETUP START ===');
+    console.log('👤 Setting up notifications for user:', uid);
     
-    // Step 1: Check browser support
+    console.log('🔍 Step 1: Checking browser support...');
     if (!('Notification' in window)) {
+      console.error('❌ Notifications not supported in this browser');
       throw new Error('Notifications are not supported in this browser');
     }
     
-    // Step 2: Check current permission status
+    console.log('🔍 Step 2: Checking current permission status...');
     const currentPermission = Notification.permission;
     console.log('📱 Current notification permission:', currentPermission);
     
-    // Step 3: Request permission if needed
+    console.log('🔍 Step 3: Requesting permission if needed...');
     let permissionGranted = false;
     if (currentPermission === 'denied') {
+      console.error('❌ Notification permission is denied');
       throw new Error('Notification permission is denied. Please enable notifications in your browser settings.');
     } else if (currentPermission === 'default') {
       console.log('🔔 Requesting notification permission...');
@@ -604,32 +659,44 @@ export const setupUserNotifications = async (uid) => {
       console.log('📱 Permission result:', permission);
       permissionGranted = permission === 'granted';
     } else if (currentPermission === 'granted') {
+      console.log('✅ Permission already granted');
       permissionGranted = true;
     }
     
     if (!permissionGranted) {
+      console.error('❌ Notification permission denied by user');
       throw new Error('Notification permission denied by user');
     }
     
-    // Step 4: Generate FCM token
-    console.log('🔑 Generating FCM token...');
+    console.log('🔍 Step 4: Generating FCM token...');
     const token = await getNotificationToken();
     console.log('✅ FCM token generated:', token.substring(0, 20) + '...');
     
-    // Step 5: Update user profile with notification data
+    console.log('🔍 Step 5: Updating user profile with notification data...');
     const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, {
+    const updateData = {
       notificationToken: token,
       notificationPermission: 'granted',
       notificationEnabled: true,
       lastTokenUpdate: new Date(),
       lastActive: new Date()
+    };
+    console.log('📝 Updating user document with:', updateData);
+    await updateDoc(userRef, updateData);
+    console.log('✅ User profile updated successfully');
+    
+    console.log('🔍 Step 6: Verifying token storage...');
+    const userSnap = await getDoc(userRef);
+    const userData = userSnap.data();
+    console.log('🔍 Stored token in user document:', {
+      hasToken: !!userData.notificationToken,
+      tokenLength: userData.notificationToken?.length || 0,
+      tokenStart: userData.notificationToken?.substring(0, 20) + '...',
+      notificationEnabled: userData.notificationEnabled,
+      permission: userData.notificationPermission
     });
     
-    // Step 6: Also save to separate collection for backward compatibility
-    await saveNotificationToken(uid, token);
-    
-    console.log('✅ Notification setup complete for user:', uid);
+    console.log('✅ === NOTIFICATION SETUP COMPLETE ===');
     return {
       success: true,
       token: token,
@@ -637,9 +704,10 @@ export const setupUserNotifications = async (uid) => {
     };
     
   } catch (error) {
-    console.error('❌ Error setting up notifications:', error);
+    console.error('❌ === NOTIFICATION SETUP FAILED ===');
+    console.error('Error setting up notifications:', error);
     
-    // Update user profile with error state
+    console.log('🔍 Updating user profile with error state...');
     const userRef = doc(db, 'users', uid);
     await updateDoc(userRef, {
       notificationPermission: Notification.permission,
@@ -655,22 +723,30 @@ export const setupUserNotifications = async (uid) => {
 // Check if user has notifications enabled
 export const checkUserNotificationStatus = async (uid) => {
   try {
+    console.log('🔍 === CHECKING NOTIFICATION STATUS ===');
+    console.log('👤 Checking status for user:', uid);
+    
     const userRef = doc(db, 'users', uid);
     const userSnap = await getDoc(userRef);
     
     if (!userSnap.exists()) {
+      console.log('❌ User not found');
       return { enabled: false, reason: 'user_not_found' };
     }
     
     const userData = userSnap.data();
-    return {
+    const status = {
       enabled: userData.notificationEnabled || false,
       permission: userData.notificationPermission || 'default',
       hasToken: !!userData.notificationToken,
       lastUpdate: userData.lastTokenUpdate
     };
+    
+    console.log('📊 Notification status:', status);
+    console.log('✅ === STATUS CHECK COMPLETE ===');
+    return status;
   } catch (error) {
-    console.error('Error checking notification status:', error);
+    console.error('❌ Error checking notification status:', error);
     return { enabled: false, reason: 'error' };
   }
 };

@@ -33,28 +33,47 @@ export const NotificationProvider = ({ children }) => {
 
   const checkNotificationStatus = async () => {
     try {
+      console.log('🔍 === CHECKING NOTIFICATION STATUS ===');
+      console.log('👤 Current user:', currentUser?.uid);
+      
       const status = await checkUserNotificationStatus(currentUser.uid);
+      console.log('📊 Status result:', status);
       setNotificationStatus(status);
+      
       if (status.permission === 'default' && !status.enabled) {
+        console.log('🔔 Showing permission prompt...');
         setShowPermissionPrompt(true);
+      } else {
+        console.log('✅ No permission prompt needed');
       }
     } catch (error) {
-      console.error('Error checking notification status:', error);
+      console.error('❌ Error checking notification status:', error);
     }
   };
 
   const autoSetupNotifications = async () => {
-    if (!currentUser || loading) return;
+    if (!currentUser || loading) {
+      console.log('⏸️ Auto-setup skipped:', { hasUser: !!currentUser, loading });
+      return;
+    }
+
     try {
+      console.log('🔄 === AUTO-SETUP NOTIFICATIONS ===');
       setLoading(true);
       setError(null);
+
       const status = await checkUserNotificationStatus(currentUser.uid);
+      console.log('📊 Current status:', status);
+      
       if (!status.enabled && status.permission !== 'denied') {
+        console.log('🔄 Auto-setting up notifications...');
         await setupUserNotifications(currentUser.uid);
         await checkNotificationStatus();
+      } else {
+        console.log('✅ Notifications already set up or denied');
       }
     } catch (error) {
-      console.error('Auto-setup error:', error);
+      console.error('❌ Auto-setup error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -63,10 +82,14 @@ export const NotificationProvider = ({ children }) => {
 
   const requestNotificationPermission = async () => {
     try {
+      console.log('🔔 === MANUAL PERMISSION REQUEST ===');
       setLoading(true);
       setError(null);
       setShowPermissionPrompt(false);
+
       const result = await setupUserNotifications(currentUser.uid);
+      console.log('📊 Setup result:', result);
+      
       if (result.success) {
         await checkNotificationStatus();
         return true;
@@ -75,7 +98,7 @@ export const NotificationProvider = ({ children }) => {
         return false;
       }
     } catch (error) {
-      console.error('Error requesting permission:', error);
+      console.error('❌ Error requesting permission:', error);
       setError(error.message);
       return false;
     } finally {

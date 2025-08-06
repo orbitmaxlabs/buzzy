@@ -84,16 +84,32 @@ function App() {
 
     setIsSearching(true)
     try {
-      const results = await searchUsersByUsername(searchQuery.trim())
-      const filteredResults = results.filter(user => 
-        user.uid !== authUser.uid && 
-        !friends.some(friend => friend.uid === user.uid)
-      )
-      setSearchResults(filteredResults)
+      console.log('🔍 Searching for users with query:', searchQuery.trim());
+      const results = await searchUsersByUsername(searchQuery.trim());
+      console.log('🔍 Raw search results:', results);
+      
+      if (!results || !Array.isArray(results)) {
+        console.warn('⚠️ Search results is not an array:', results);
+        setSearchResults([]);
+        return;
+      }
+      
+      const filteredResults = results.filter(user => {
+        if (!user || !user.uid) {
+          console.warn('⚠️ Invalid user object:', user);
+          return false;
+        }
+        return user.uid !== authUser?.uid && 
+               !friends.some(friend => friend.uid === user.uid);
+      });
+      
+      console.log('🔍 Filtered results:', filteredResults);
+      setSearchResults(filteredResults);
     } catch (error) {
-      console.error('Error searching users:', error)
+      console.error('❌ Error searching users:', error);
+      setSearchResults([]);
     } finally {
-      setIsSearching(false)
+      setIsSearching(false);
     }
   }
 

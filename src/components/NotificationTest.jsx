@@ -11,23 +11,32 @@ const NotificationTest = () => {
 
   const testNotifications = async () => {
     if (!currentUser) {
+      console.log('❌ No current user for testing');
       setStatus('Please log in first');
       return;
     }
 
+    console.log('🧪 === TESTING NOTIFICATIONS ===');
+    console.log('👤 Testing for user:', currentUser.uid);
+    console.log('📊 Current notification status:', notificationStatus);
+    
     setLoading(true);
     setStatus('Testing notifications...');
 
     try {
       if (!notificationStatus.enabled) {
+        console.log('🔔 Setting up notifications first...');
         setStatus('Setting up notifications...');
         const result = await requestNotificationPermission();
+        console.log('📊 Setup result:', result);
         if (!result) {
+          console.log('❌ Failed to setup notifications');
           setStatus('❌ Failed to setup notifications');
           return;
         }
       }
 
+      console.log('📤 Sending test notification...');
       setStatus('Sending test notification...');
       const result = await sendNotificationToUser(currentUser.uid, {
         title: 'Test Notification',
@@ -35,12 +44,16 @@ const NotificationTest = () => {
         data: { type: 'test' }
       });
 
+      console.log('📊 Test result:', result);
       if (result.success) {
+        console.log('✅ Test notification sent successfully');
         setStatus('✅ Notifications working! Check your device.');
       } else {
+        console.log('❌ Test notification failed:', result.message);
         setStatus(`❌ Notification failed: ${result.message}`);
       }
     } catch (error) {
+      console.error('❌ Test error:', error);
       setStatus(`❌ Error: ${error.message}`);
     } finally {
       setLoading(false);
