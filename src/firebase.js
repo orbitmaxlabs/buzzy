@@ -15,30 +15,15 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Initialize Firebase Cloud Messaging with error handling
+// Initialize Firebase Cloud Messaging
 let messaging = null;
 try {
   messaging = getMessaging(app);
   console.log('Firebase messaging initialized successfully');
 } catch (error) {
   console.error('Failed to initialize Firebase messaging:', error);
-  console.warn('Notifications will be disabled');
 }
 export { messaging };
-
-// Ensure we always use the Firebase messaging service worker
-const getMessagingRegistration = async () => {
-  const registrations = await navigator.serviceWorker.getRegistrations();
-  let registration = registrations.find(r => r.active?.scriptURL.includes('firebase-messaging-sw.js'));
-
-  if (!registration) {
-    registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: '/'
-    });
-  }
-
-  return registration;
-};
 
 // Random emoji generator for profile pictures
 const EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '👻', '👽', '🤖', '😈', '👿', '👹', '👺', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🐱', '🐶', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🐘', '🦛', '🦏', '🐪', '🐫', '🦙', '🦒', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦚', '🦜', '🦢', '🦩', '🕊️', '🐇', '🦝', '🦨', '🦡', '🦫', '🦦', '🦥', '🐁', '🐀', '🐇', '🐿️', '🦔', '🐉', '🐲', '🌵', '🎄', '🌲', '🌳', '🌴', '🌱', '🌿', '☘️', '🍀', '🎍', '🎋', '🍃', '🍂', '🍁', '🍄', '🌾', '💐', '🌷', '🌹', '🥀', '🌺', '🌻', '🌼', '🌸', '🌼', '🌻', '🌺', '🥀', '🌹', '🌷', '💐', '🌾', '🍄', '🍁', '🍂', '🍃', '🎋', '🎍', '🍀', '☘️', '🌿', '🌱', '🌴', '🌳', '🌲', '🎄', '🌵', '🐲', '🐉', '🦔', '🐿️', '🐇', '🐀', '🐁', '🦥', '🦦', '🦫', '🦡', '🦨', '🦝', '🐇', '🕊️', '🦩', '🦢', '🦜', '🦚', '🦃', '🐓', '🐈‍⬛', '🐈', '🐕‍🦺', '🦮', '🐩', '🐕', '🦌', '🐐', '🐑', '🐏', '🐖', '🐎', '🐄', '🐂', '🐃', '🦒', '🦙', '🐫', '🐪', '🦏', '🦛', '🐘', '🦍', '🦓', '🐆', '🐅', '🐊', '🦈', '🐋', '🐳', '🐬', '🐟', '🐠', '🐡', '🦀', '🦞', '🦐', '🦑', '🐙', '🦕', '🦖', '🦎', '🐍', '🐢', '🦂', '🕸️', '🕷️', '🦗', '🦟', '🐜', '🐞', '🐌', '🦋', '🐛', '🐝', '🦄', '🐴', '🐗', '🐺', '🦇', '🦉', '🦅', '🦆', '🐥', '🐣', '🐤', '🐦', '🐧', '🐔', '🐒', '🙊', '🙉', '🙈', '🐵', '🐸', '🐷', '🐮', '🦁', '🐯', '🐨', '🐼', '🐻', '🦊', '🐰', '🐹', '🐭', '🐶', '🐱', '😾', '😿', '🙀', '😽', '😼', '😻', '😹', '😸', '😺', '🤖', '👽', '👻', '👺', '👹', '🤠', '🤑', '🤕', '🤒', '😷', '🤧', '🤮', '🤢', '🥴', '🤐', '😵', '😪', '🤤', '😴', '🥱', '😲', '😮', '😧', '😦', '😯', '😑', '😐', '😶', '🤥', '🤫', '🤭', '🤔', '🤗', '😓', '😥', '😰', '😨', '😱', '🥶', '🥵', '😳', '🤯', '🤬', '😡', '😠', '😤', '😭', '😢', '🥺', '😩', '😫', '😖', '😣', '☹️', '🙁', '😕', '😟', '😔', '😞', '😒', '😏', '🥳', '🤩', '😎', '🤓', '🧐', '🤨', '🤪', '😜', '😝', '😛', '😋', '😚', '😙', '😗', '😘', '🥰', '😍', '😌', '😉', '🙃', '🙂', '😇', '😊', '🤣', '😂', '😅', '😆', '😁', '😄', '😃', '😀'];
@@ -67,8 +52,8 @@ export const createUserProfile = async (user) => {
   const userData = {
     uid: user.uid,
     email: user.email,
-    username: username, // This will be the display name as well
-    photoURL: getRandomEmoji(), // Always use random emoji, never URL
+    username: username,
+    photoURL: getRandomEmoji(),
     createdAt: new Date(),
     lastActive: new Date()
   };
@@ -87,7 +72,6 @@ export const getUserProfile = async (uid) => {
     // Ensure photoURL is an emoji, not a URL
     if (userData.photoURL && userData.photoURL.startsWith('http')) {
       userData.photoURL = getRandomEmoji();
-      // Update the user's profile with the new emoji
       await updateUserProfile(uid, { photoURL: userData.photoURL });
     }
     
@@ -177,29 +161,26 @@ export const respondToFriendRequest = async (requestId, response) => {
   });
 };
 
-// Improved friends management to prevent duplicates
+// Friends management
 export const getFriends = async (uid) => {
   const friendsRef = collection(db, 'friends');
   const q = query(friendsRef, where('userUid', '==', uid));
   const querySnapshot = await getDocs(q);
   
   const friends = [];
-  const seenFriendUids = new Set(); // Track seen friend UIDs to prevent duplicates
+  const seenFriendUids = new Set();
   
   for (const doc of querySnapshot.docs) {
     const friendData = doc.data();
     
-    // Skip if we've already seen this friend
     if (seenFriendUids.has(friendData.friendUid)) {
       continue;
     }
     
     const friendUser = await getUserProfile(friendData.friendUid);
     if (friendUser) {
-      // Ensure photoURL is an emoji, not a URL
       if (friendUser.photoURL && friendUser.photoURL.startsWith('http')) {
         friendUser.photoURL = getRandomEmoji();
-        // Update the user's profile with the new emoji
         await updateUserProfile(friendUser.uid, { photoURL: friendUser.photoURL });
       }
       
@@ -281,7 +262,6 @@ export const migrateUserData = async (uid) => {
   try {
     const userData = await getUserProfile(uid);
     if (userData) {
-      // Ensure user has an emoji instead of URL
       if (userData.photoURL && userData.photoURL.startsWith('http')) {
         await updateUserProfile(uid, { photoURL: getRandomEmoji() });
       }
@@ -325,9 +305,13 @@ export const cleanupDuplicateFriends = async (uid) => {
 
 export default app;
 
-// Notification functions
+// Simplified notification functions
 export const requestNotificationPermission = async () => {
   try {
+    if (!('Notification' in window)) {
+      throw new Error('Notifications are not supported in this browser');
+    }
+    
     const permission = await Notification.requestPermission();
     return permission === 'granted';
   } catch (error) {
@@ -338,13 +322,10 @@ export const requestNotificationPermission = async () => {
 
 export const getNotificationToken = async () => {
   try {
-    console.log('🔔 === NOTIFICATION TOKEN DEBUG START ===');
-    
     if (!messaging) {
       throw new Error('Firebase messaging not initialized');
     }
     
-    // Check notification permission
     if (!('Notification' in window)) {
       throw new Error('Notifications are not supported in this browser');
     }
@@ -360,118 +341,50 @@ export const getNotificationToken = async () => {
       }
     }
     
-    console.log('✅ Notification permission granted');
-
-    // Check if we're getting the push service error
-    let token = null;
-    let tokenError = null;
-    
-    try {
-      // Use Firebase messaging service worker registration
-      if (!('serviceWorker' in navigator)) {
-        throw new Error('Service workers are not supported in this browser');
-      }
-      const registration = await getMessagingRegistration();
-
-      console.log('✅ Firebase messaging service worker:', registration);
-
-      // Wait for the service worker system to be ready
-      await navigator.serviceWorker.ready;
-      console.log('✅ Service worker system is ready');
-      
-      // Wait for everything to settle
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Get real FCM token
-      console.log('🌐 Getting real FCM token...');
-      
-      token = await getToken(messaging, {
-        vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
-        serviceWorkerRegistration: registration
-      });
-    } catch (error) {
-      tokenError = error;
-      console.error('Initial token generation failed:', error.message);
-      
-      // If we get the push service error, try recovery
-      if (error.message && error.message.includes('Registration failed - push service error')) {
-        console.log('🔧 Push service error detected, attempting recovery...');
-        
-        try {
-          // Import and use the recovery utility
-          const { recoverPushService } = await import('./utils/pushServiceFix.js');
-          const recoveryResult = await recoverPushService();
-          
-          if (recoveryResult.success) {
-            console.log('✅ Recovery successful, token generated');
-            token = recoveryResult.token;
-          } else {
-            console.error('❌ Recovery failed:', recoveryResult);
-            // Use a fallback approach for development/testing
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-              console.warn('⚠️ Using fallback token for local development');
-              const { generateFallbackToken } = await import('./utils/pushServiceFix.js');
-              token = generateFallbackToken();
-            } else {
-              throw new Error(`Push service recovery failed: ${recoveryResult.error}`);
-            }
-          }
-        } catch (recoveryError) {
-          console.error('Recovery attempt failed:', recoveryError);
-          throw tokenError; // Re-throw original error
-        }
-      } else {
-        throw error; // Re-throw if not a push service error
-      }
+    // Register service worker if needed
+    if (!('serviceWorker' in navigator)) {
+      throw new Error('Service workers are not supported in this browser');
     }
+    
+    let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+    if (!registration) {
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/'
+      });
+    }
+    
+    // Wait for service worker to be ready
+    await navigator.serviceWorker.ready;
+    
+    // Get FCM token
+    const token = await getToken(messaging, {
+      vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
+      serviceWorkerRegistration: registration
+    });
     
     if (!token) {
-      throw new Error('Failed to generate FCM token after recovery');
+      throw new Error('Failed to generate FCM token');
     }
     
-    console.log('✅ FCM token generated successfully:', token.substring(0, 20) + '...');
-    console.log('Full token length:', token.length);
-    console.log('🔔 === NOTIFICATION TOKEN DEBUG END: SUCCESS ===');
     return token;
-    
   } catch (error) {
-    console.error('🔔 === NOTIFICATION TOKEN DEBUG ERROR ===', error);
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Error getting notification token:', error);
     throw error;
   }
 };
 
 export const saveNotificationToken = async (uid, token) => {
   try {
-    console.log('💾 === SAVE TOKEN DEBUG START ===');
-    console.log('User UID:', uid);
-    console.log('Token (first 20 chars):', token.substring(0, 20) + '...');
-    
     const tokenRef = doc(db, 'notificationTokens', uid);
-    console.log('Token document reference:', tokenRef.path);
-    
     const tokenData = {
       token,
       createdAt: new Date(),
       lastUsed: new Date()
     };
     
-    console.log('Token data to save:', tokenData);
-    
     await setDoc(tokenRef, tokenData);
-    console.log('✅ Token saved successfully to Firestore');
-    console.log('💾 === SAVE TOKEN DEBUG END: SUCCESS ===');
   } catch (error) {
-    console.error('💾 === SAVE TOKEN DEBUG ERROR ===', error);
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      code: error.code
-    });
+    console.error('Error saving notification token:', error);
     throw error;
   }
 };
@@ -488,39 +401,22 @@ export const removeNotificationToken = async (uid) => {
 
 export const sendNotificationToUser = async (targetUid, notification) => {
   try {
-    console.log('📱 === SEND NOTIFICATION DEBUG START ===');
-    console.log('Target User UID:', targetUid);
-    console.log('Notification data:', notification);
-    
     // Get the user's notification token from Firestore
-    console.log('Step 1: Getting notification token from Firestore...');
     const tokenRef = doc(db, 'notificationTokens', targetUid);
-    console.log('Token document path:', tokenRef.path);
-    
     const tokenSnap = await getDoc(tokenRef);
-    console.log('Token document exists:', tokenSnap.exists());
     
     if (!tokenSnap.exists()) {
-      console.log('❌ User has no notification token in Firestore');
-      console.log('📱 === SEND NOTIFICATION DEBUG END: NO TOKEN ===');
-      
       return { 
         success: false, 
-        message: 'User has no notification token. They may not have enabled notifications or the token generation failed.',
+        message: 'User has no notification token',
         reason: 'no_token'
       };
     }
 
     const tokenData = tokenSnap.data();
-    console.log('Token data retrieved:', {
-      token: tokenData.token ? tokenData.token.substring(0, 20) + '...' : 'null',
-      createdAt: tokenData.createdAt,
-      lastUsed: tokenData.lastUsed
-    });
-    
     const token = tokenData.token;
+    
     if (!token) {
-      console.log('❌ Token is null or empty');
       return { 
         success: false, 
         message: 'Token is null or empty',
@@ -529,17 +425,12 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     }
     
     // Send notification via Firebase Functions
-    console.log('Step 2: Calling Firebase Function to send notification...');
-    console.log('Function URL: https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification');
-    
     const requestBody = {
       targetUid,
       title: notification.title,
       body: notification.body,
       data: notification.data || {}
     };
-    
-    console.log('Request body:', requestBody);
     
     const response = await fetch('https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification', {
       method: 'POST',
@@ -549,13 +440,8 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       body: JSON.stringify(requestBody)
     });
 
-    console.log('Firebase Function response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Firebase Function error response:', errorText);
-      console.log('📱 === SEND NOTIFICATION DEBUG END: FUNCTION ERROR ===');
       return { 
         success: false, 
         message: `Failed to send notification: ${response.status} ${errorText}`,
@@ -564,17 +450,8 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     }
 
     const result = await response.json();
-    console.log('✅ Firebase Function success response:', result);
-    
-    console.log('📱 === SEND NOTIFICATION DEBUG END: SUCCESS ===');
     return { ...result, success: true };
   } catch (error) {
-    console.error('📱 === SEND NOTIFICATION DEBUG ERROR ===', error);
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
     return { 
       success: false, 
       message: `Error sending notification: ${error.message}`,
@@ -623,6 +500,7 @@ export const markNotificationAsRead = async (notificationId) => {
 
 // Listen for foreground messages
 export const onForegroundMessage = (callback) => {
+  if (!messaging) return () => {};
   return onMessage(messaging, (payload) => {
     console.log('Foreground message received:', payload);
     callback(payload);
@@ -683,85 +561,6 @@ export const markMessageAsRead = async (messageId) => {
     });
   } catch (error) {
     console.error('Error marking message as read:', error);
-    throw error;
-  }
-};
-
-// Test VAPID key function
-export const testVapidKey = async () => {
-  try {
-    console.log('🧪 === VAPID KEY TEST START ===');
-    
-    if (!messaging) {
-      throw new Error('Firebase messaging not initialized');
-    }
-    
-    // Check notification permission
-    if (!('Notification' in window)) {
-      throw new Error('Notifications are not supported in this browser');
-    }
-    
-    if (Notification.permission === 'denied') {
-      throw new Error('Notification permission is denied');
-    }
-    
-    if (Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        throw new Error('Notification permission denied by user');
-      }
-    }
-    
-    // Use Firebase messaging service worker registration
-    if (!('serviceWorker' in navigator)) {
-      throw new Error('Service workers are not supported');
-    }
-    const registration = await getMessagingRegistration();
-
-    await navigator.serviceWorker.ready;
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Test current VAPID key
-    console.log('Testing current VAPID key...');
-    const currentVapidKey = 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM';
-    
-    try {
-      const token = await getToken(messaging, {
-        vapidKey: currentVapidKey,
-        serviceWorkerRegistration: registration
-      });
-      
-      if (token && token.length > 100) {
-        console.log('✅ Current VAPID key is working!');
-        console.log('Token length:', token.length);
-        console.log('Token preview:', token.substring(0, 20) + '...');
-        return { success: true, token, vapidKey: currentVapidKey };
-      } else {
-        throw new Error('Token is too short or invalid');
-      }
-    } catch (error) {
-      console.log('❌ Current VAPID key failed:', error.message);
-      
-      // Try without VAPID key to see if that works
-      try {
-        console.log('Testing without VAPID key...');
-        const tokenWithoutVapid = await getToken(messaging, {
-          serviceWorkerRegistration: registration
-        });
-        
-        if (tokenWithoutVapid && tokenWithoutVapid.length > 100) {
-          console.log('✅ Token generated without VAPID key');
-          return { success: true, token: tokenWithoutVapid, vapidKey: null };
-        }
-      } catch (error2) {
-        console.log('❌ Token generation failed completely:', error2.message);
-      }
-      
-      throw new Error('VAPID key is invalid or not configured properly');
-    }
-    
-  } catch (error) {
-    console.error('🧪 === VAPID KEY TEST ERROR ===', error);
     throw error;
   }
 };

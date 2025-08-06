@@ -1,146 +1,136 @@
 import React, { useState } from 'react';
+import { getNotificationToken, saveNotificationToken } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { getNotificationToken, saveNotificationToken, removeNotificationToken } from '../firebase';
 
 const RefreshTokenButton = () => {
-  const { currentUser: user } = useAuth();
+  const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleRefreshToken = async () => {
-    if (!user) return;
-    
+    if (!currentUser) {
+      setMessage('Please log in first');
+      return;
+    }
+
     setLoading(true);
+    setMessage('');
+
     try {
-      console.log('🔄 === REFRESH TOKEN DEBUG START ===');
-      console.log('User:', user.uid);
-      
-      // Step 1: Remove old token first
-      console.log('Step 1: Removing old token...');
-      await removeNotificationToken(user.uid);
-      console.log('✅ Old token removed');
-      
-      // Step 2: Check and request notification permission
-      console.log('Step 2: Checking notification permission...');
-      if ('Notification' in window) {
-        console.log('Current permission:', Notification.permission);
-        
-        if (Notification.permission === 'default') {
-          console.log('Requesting notification permission...');
-          const permission = await Notification.requestPermission();
-          console.log('Permission result:', permission);
-          
-          if (permission !== 'granted') {
-            throw new Error('Notification permission denied by user');
-          }
-        } else if (Notification.permission === 'denied') {
-          throw new Error('Notification permission is denied. Please enable notifications in your browser settings.');
-        }
-      } else {
+      // Request notification permission if needed
+      if (!('Notification' in window)) {
         throw new Error('Notifications are not supported in this browser');
       }
       
-      // Step 3: Ensure service worker is registered
-      console.log('Step 3: Ensuring service worker is registered...');
-      if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (!registration) {
-          throw new Error('Service worker not found');
+      if (Notification.permission === 'denied') {
+        throw new Error('Notification permission is denied. Please enable notifications in your browser settings.');
+      }
+      
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          throw new Error('Notification permission denied by user');
         }
-
-        // Wait for service worker to be ready
-        await navigator.serviceWorker.ready;
-        console.log('✅ Service worker is ready');
-
-        // Wait a bit for everything to settle
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } else {
-        throw new Error('Service workers are not supported in this browser');
       }
+
+      // Get new token
+      const token = await getNotificationToken();
       
-      // Step 4: Get new token
-      console.log('Step 4: Getting new notification token...');
-      const newToken = await getNotificationToken();
-      console.log('✅ New token generated:', newToken.substring(0, 20) + '...');
+      // Save token to Firestore
+      await saveNotificationToken(currentUser.uid, token);
       
-      // Step 5: Save token to Firestore
-      console.log('Step 5: Saving token to Firestore...');
-      await saveNotificationToken(user.uid, newToken);
-      console.log('✅ Token saved successfully');
+      setMessage('✅ Token refreshed successfully!');
       
-      // Step 6: Show success feedback
-      console.log('Step 6: Showing success feedback...');
-      const button = document.querySelector('.refresh-token-btn');
-      if (button) {
-        button.style.backgroundColor = '#10b981'; // Green
-        button.style.color = 'white';
-        button.style.transform = 'scale(1.1)';
-        setTimeout(() => {
-          button.style.backgroundColor = '';
-          button.style.color = '';
-          button.style.transform = '';
-        }, 3000);
-      }
-      
-      // Step 7: Show success message
-      alert('✅ Notification token refreshed successfully! You will now receive notifications on all your devices.');
-      
-      console.log('🔄 === REFRESH TOKEN DEBUG END: SUCCESS ===');
-      
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(''), 3000);
     } catch (error) {
-      console.error('🔄 === REFRESH TOKEN DEBUG ERROR ===', error);
+      console.error('Error refreshing token:', error);
+      setMessage(`❌ Error: ${error.message}`);
       
-      // Show error feedback
-      const button = document.querySelector('.refresh-token-btn');
-      if (button) {
-        button.style.backgroundColor = '#ef4444'; // Red
-        button.style.color = 'white';
-        button.style.transform = 'scale(1.1)';
-        setTimeout(() => {
-          button.style.backgroundColor = '';
-          button.style.color = '';
-          button.style.transform = '';
-        }, 3000);
-      }
-      
-      // Show error message
-      alert(`❌ Failed to refresh notification token: ${error.message}`);
+      // Clear error message after 5 seconds
+      setTimeout(() => setMessage(''), 5000);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!user) return null;
+  if (!currentUser) return null;
 
   return (
-    <button
-      className="refresh-token-btn icon-btn"
-      onClick={handleRefreshToken}
-      disabled={loading}
-      title="Refresh notification token and enable notifications"
-      style={{
-        transition: 'all 0.3s ease',
-        position: 'relative'
-      }}
-    >
-      <svg 
-        className={`icon ${loading ? 'animate-spin' : ''}`} 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="2"
+    <div className="refresh-token-container">
+      <button
+        onClick={handleRefreshToken}
+        disabled={loading}
+        className="refresh-token-btn"
+        title="Refresh notification token"
       >
-        <path d="M1 4v6h6" />
-        <path d="M23 20v-6h-6" />
-        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-      </svg>
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        {loading ? 'Refreshing...' : 'Refresh Token'}
+      </button>
       
-      {/* Loading indicator */}
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      {message && (
+        <div className={`refresh-token-message ${message.includes('✅') ? 'success' : 'error'}`}>
+          {message}
         </div>
       )}
-    </button>
+      
+      <style jsx>{`
+        .refresh-token-container {
+          position: relative;
+        }
+        
+        .refresh-token-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem;
+          background: #f3f4f6;
+          border: 1px solid #d1d5db;
+          border-radius: 0.375rem;
+          color: #374151;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        
+        .refresh-token-btn:hover:not(:disabled) {
+          background: #e5e7eb;
+          border-color: #9ca3af;
+        }
+        
+        .refresh-token-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        
+        .refresh-token-message {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          margin-top: 0.25rem;
+          padding: 0.5rem;
+          border-radius: 0.375rem;
+          font-size: 0.75rem;
+          font-weight: 500;
+          z-index: 50;
+        }
+        
+        .refresh-token-message.success {
+          background: #d1fae5;
+          color: #065f46;
+          border: 1px solid #a7f3d0;
+        }
+        
+        .refresh-token-message.error {
+          background: #fee2e2;
+          color: #991b1b;
+          border: 1px solid #fecaca;
+        }
+      `}</style>
+    </div>
   );
 };
 

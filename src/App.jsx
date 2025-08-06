@@ -4,9 +4,7 @@ import { useAuth } from './contexts/AuthContext.jsx'
 import NotificationBell from './components/NotificationBell.jsx'
 import RefreshTokenButton from './components/RefreshTokenButton.jsx'
 import PWAInstallPrompt from './components/PWAInstallPrompt.jsx'
-import NotificationTest from './components/NotificationTest.jsx'
-import NotificationDiagnostic from './components/NotificationDiagnostic.jsx'
-import PushServiceRecoveryButton from './components/PushServiceRecoveryButton.jsx'
+
 import { 
   searchUsersByUsername, 
   sendFriendRequest, 
@@ -58,82 +56,8 @@ function App() {
       
       loadFriends()
       loadFriendRequests()
-      
-      // Initialize notifications for the user
-      initializeNotifications()
     }
   }, [authUser, userProfile])
-
-  const initializeNotifications = async () => {
-    try {
-      console.log('🔔 === INITIALIZE NOTIFICATIONS DEBUG START ===');
-      console.log('Current notification permission:', Notification.permission);
-      console.log('User agent:', navigator.userAgent);
-      console.log('Platform:', navigator.platform);
-      console.log('Is mobile:', /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-      
-      // Ensure a service worker is present
-      if ('serviceWorker' in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.getRegistration();
-          console.log('Service Worker registration:', registration);
-          if (!registration) {
-            throw new Error('Service worker not registered');
-          }
-        } catch (swError) {
-          console.error('Service worker lookup error:', swError);
-        }
-      }
-      
-      // Request notification permission if not already granted
-      if ('Notification' in window && Notification.permission === 'default') {
-        console.log('Requesting notification permission...');
-        const permission = await Notification.requestPermission()
-        console.log('Permission result:', permission);
-        
-        if (permission === 'granted') {
-          console.log('✅ Notification permission granted, waiting before getting token...');
-          
-          // Wait a bit for permission to be fully processed
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Import the notification functions
-          const { getNotificationToken, saveNotificationToken } = await import('./firebase.js');
-          
-          try {
-            const token = await getNotificationToken();
-            console.log('✅ Token generated, saving to Firestore...');
-            await saveNotificationToken(authUser.uid, token);
-            console.log('✅ Token saved successfully');
-          } catch (tokenError) {
-            console.error('❌ Error getting/saving token:', tokenError);
-          }
-        } else {
-          console.log('❌ Notification permission denied');
-        }
-      } else if (Notification.permission === 'granted') {
-        console.log('✅ Permission already granted, checking if token exists...');
-        
-        // Import the notification functions
-        const { getNotificationToken, saveNotificationToken } = await import('./firebase.js');
-        
-        try {
-          const token = await getNotificationToken();
-          console.log('✅ Token generated, saving to Firestore...');
-          await saveNotificationToken(authUser.uid, token);
-          console.log('✅ Token saved successfully');
-        } catch (tokenError) {
-          console.error('❌ Error getting/saving token:', tokenError);
-        }
-      } else {
-        console.log('❌ Notification permission denied or not supported');
-      }
-      
-      console.log('🔔 === INITIALIZE NOTIFICATIONS DEBUG END ===');
-    } catch (error) {
-      console.error('🔔 === INITIALIZE NOTIFICATIONS DEBUG ERROR ===', error);
-    }
-  }
 
   // Initialize edit form when user profile changes
   useEffect(() => {
@@ -800,11 +724,46 @@ function App() {
         </main>
       )}
 
-      {/* Notification Diagnostic Component */}
-      <NotificationDiagnostic />
-      
-      {/* Push Service Recovery Button - Shows when there's an issue */}
-      <PushServiceRecoveryButton />
+      {/* Test Notification Button */}
+      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
+        <button
+          onClick={async () => {
+            if (authUser && userProfile) {
+              try {
+                const notification = {
+                  title: 'Test Notification',
+                  body: 'This is a test notification from Buzzy!',
+                  data: {
+                    type: 'test',
+                    timestamp: Date.now()
+                  }
+                };
+                
+                const result = await sendNotificationToUser(authUser.uid, notification);
+                if (result.success) {
+                  alert('✅ Test notification sent successfully!');
+                } else {
+                  alert(`❌ Test notification failed: ${result.message}`);
+                }
+              } catch (error) {
+                alert(`❌ Error sending test notification: ${error.message}`);
+              }
+            }
+          }}
+          style={{
+            padding: '10px 15px',
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500'
+          }}
+        >
+          Test Notification
+        </button>
+      </div>
       
     </div>
   )
