@@ -690,10 +690,12 @@ export const setupUserNotifications = async (uid) => {
     const token = await getNotificationToken();
     console.log('✅ FCM token generated:', token.substring(0, 20) + '...');
     
-    console.log('🔍 Step 5: Updating user profile with notification data...');
+    console.log('🔍 Step 5: Saving token to database...');
+    await saveNotificationToken(uid, token);
+
+    console.log('🔍 Step 6: Updating user profile with notification data...');
     const userRef = doc(db, 'users', uid);
     const updateData = {
-      notificationToken: token,
       notificationPermission: 'granted',
       notificationEnabled: true,
       lastTokenUpdate: new Date(),
@@ -702,8 +704,8 @@ export const setupUserNotifications = async (uid) => {
     console.log('📝 Updating user document with:', updateData);
     await updateDoc(userRef, updateData);
     console.log('✅ User profile updated successfully');
-    
-    console.log('🔍 Step 6: Verifying token storage...');
+
+    console.log('🔍 Step 7: Verifying token storage...');
     const userSnap = await getDoc(userRef);
     const userData = userSnap.data();
     console.log('🔍 Stored token in user document:', {

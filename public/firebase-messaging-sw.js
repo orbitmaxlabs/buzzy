@@ -80,7 +80,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // Handle service worker installation
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 

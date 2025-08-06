@@ -1,5 +1,12 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { setupUserNotifications, checkUserNotificationStatus, onForegroundMessage } from '../firebase';
+import {
+  setupUserNotifications,
+  checkUserNotificationStatus,
+  onForegroundMessage,
+  getUserNotifications,
+  markNotificationAsRead
+} from '../firebase';
 import { useAuth } from './AuthContext';
 
 const NotificationContext = createContext();
@@ -15,6 +22,8 @@ export const NotificationProvider = ({ children }) => {
   const [notificationStatus, setNotificationStatus] = useState({
     enabled: false, permission: 'default', hasToken: false, lastUpdate: null
   });
+  const [notifications, setNotifications] = useState([]);
+  const [permission, setPermission] = useState('default');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
@@ -39,7 +48,9 @@ export const NotificationProvider = ({ children }) => {
       const status = await checkUserNotificationStatus(currentUser.uid);
       console.log('📊 Status result:', status);
       setNotificationStatus(status);
-      
+      setPermission(status.permission);
+      await loadNotifications();
+
       if (status.permission === 'default' && !status.enabled) {
         console.log('🔔 Showing permission prompt...');
         setShowPermissionPrompt(true);
@@ -50,6 +61,43 @@ export const NotificationProvider = ({ children }) => {
       console.error('❌ Error checking notification status:', error);
     }
   };
+
+  const loadNotifications = async () => {
+    if (!currentUser) return;
+    try {
+      const list = await getUserNotifications(currentUser.uid);
+      setNotifications(list);
+    } catch (err) {
+      console.error('❌ Error loading notifications:', err);
+    }
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      setNotifications(prev =>
+        prev.map(n => (n.id === notificationId ? { ...n, read: true } : n))
+      );
+    } catch (err) {
+      console.error('❌ Error marking notification as read:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const unsubscribe = onForegroundMessage(payload => {
+      const newNotification = {
+        id: payload.messageId || Date.now().toString(),
+        title: payload.notification?.title,
+        body: payload.notification?.body,
+        createdAt: new Date(),
+        read: false,
+        ...payload.data
+      };
+      setNotifications(prev => [newNotification, ...prev]);
+    });
+    return unsubscribe;
+  }, [currentUser]);
 
   const autoSetupNotifications = async () => {
     if (!currentUser || loading) {
@@ -110,8 +158,16 @@ export const NotificationProvider = ({ children }) => {
 
   return (
     <NotificationContext.Provider value={{
-      notificationStatus, loading, error, showPermissionPrompt,
-      requestNotificationPermission, dismissPermissionPrompt, checkNotificationStatus
+      notificationStatus,
+      permission,
+      notifications,
+      loading,
+      error,
+      showPermissionPrompt,
+      requestNotificationPermission,
+      dismissPermissionPrompt,
+      checkNotificationStatus,
+      markAsRead
     }}>
       {children}
       
