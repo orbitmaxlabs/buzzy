@@ -5,6 +5,8 @@ import NotificationBell from './components/NotificationBell.jsx'
 import RefreshTokenButton from './components/RefreshTokenButton.jsx'
 import PWAInstallPrompt from './components/PWAInstallPrompt.jsx'
 import NotificationTest from './components/NotificationTest.jsx'
+import NotificationDiagnostic from './components/NotificationDiagnostic.jsx'
+import PushServiceRecoveryButton from './components/PushServiceRecoveryButton.jsx'
 import { 
   searchUsersByUsername, 
   sendFriendRequest, 
@@ -798,8 +800,11 @@ function App() {
         </main>
       )}
 
-      {/* Notification Test Component - Remove this after testing */}
-      <NotificationTest />
+      {/* Notification Diagnostic Component */}
+      <NotificationDiagnostic />
+      
+      {/* Push Service Recovery Button - Shows when there's an issue */}
+      <PushServiceRecoveryButton />
       
     </div>
   )

@@ -191,8 +191,18 @@ export const setupPWAEventListeners = () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       console.log('🎯 Service worker controller changed');
-      // Reload the page to use the new service worker
-      window.location.reload();
+      // Don't automatically reload - this can cause infinite loops
+      // Instead, show a notification to the user
+      console.log('A new version of the app is available. Please refresh the page when convenient.');
+      
+      // You could show a toast notification here instead
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('App Updated', {
+          body: 'A new version is available. Refresh when ready.',
+          icon: '/android/android-launchericon-192-192.png',
+          tag: 'app-update'
+        });
+      }
     });
   }
 };

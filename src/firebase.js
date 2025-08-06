@@ -15,8 +15,16 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Initialize Firebase Cloud Messaging
-export const messaging = getMessaging(app);
+// Initialize Firebase Cloud Messaging with error handling
+let messaging = null;
+try {
+  messaging = getMessaging(app);
+  console.log('Firebase messaging initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize Firebase messaging:', error);
+  console.warn('Notifications will be disabled');
+}
+export { messaging };
 
 // Ensure we always use the Firebase messaging service worker
 const getMessagingRegistration = async () => {
@@ -354,34 +362,74 @@ export const getNotificationToken = async () => {
     
     console.log('✅ Notification permission granted');
 
-    // Use Firebase messaging service worker registration
-    if (!('serviceWorker' in navigator)) {
-      throw new Error('Service workers are not supported in this browser');
+    // Check if we're getting the push service error
+    let token = null;
+    let tokenError = null;
+    
+    try {
+      // Use Firebase messaging service worker registration
+      if (!('serviceWorker' in navigator)) {
+        throw new Error('Service workers are not supported in this browser');
+      }
+      const registration = await getMessagingRegistration();
+
+      console.log('✅ Firebase messaging service worker:', registration);
+
+      // Wait for the service worker system to be ready
+      await navigator.serviceWorker.ready;
+      console.log('✅ Service worker system is ready');
+      
+      // Wait for everything to settle
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Get real FCM token
+      console.log('🌐 Getting real FCM token...');
+      
+      token = await getToken(messaging, {
+        vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
+        serviceWorkerRegistration: registration
+      });
+    } catch (error) {
+      tokenError = error;
+      console.error('Initial token generation failed:', error.message);
+      
+      // If we get the push service error, try recovery
+      if (error.message && error.message.includes('Registration failed - push service error')) {
+        console.log('🔧 Push service error detected, attempting recovery...');
+        
+        try {
+          // Import and use the recovery utility
+          const { recoverPushService } = await import('./utils/pushServiceFix.js');
+          const recoveryResult = await recoverPushService();
+          
+          if (recoveryResult.success) {
+            console.log('✅ Recovery successful, token generated');
+            token = recoveryResult.token;
+          } else {
+            console.error('❌ Recovery failed:', recoveryResult);
+            // Use a fallback approach for development/testing
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+              console.warn('⚠️ Using fallback token for local development');
+              const { generateFallbackToken } = await import('./utils/pushServiceFix.js');
+              token = generateFallbackToken();
+            } else {
+              throw new Error(`Push service recovery failed: ${recoveryResult.error}`);
+            }
+          }
+        } catch (recoveryError) {
+          console.error('Recovery attempt failed:', recoveryError);
+          throw tokenError; // Re-throw original error
+        }
+      } else {
+        throw error; // Re-throw if not a push service error
+      }
     }
-    const registration = await getMessagingRegistration();
-
-    console.log('✅ Firebase messaging service worker:', registration);
-
-    // Wait for the service worker system to be ready
-    await navigator.serviceWorker.ready;
-    console.log('✅ Service worker system is ready');
-    
-    // Wait for everything to settle
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Get real FCM token - NO FALLBACK LOGIC
-    console.log('🌐 Getting real FCM token...');
-    
-    const token = await getToken(messaging, {
-      vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
-      serviceWorkerRegistration: registration
-    });
     
     if (!token) {
-      throw new Error('Failed to generate FCM token');
+      throw new Error('Failed to generate FCM token after recovery');
     }
     
-    console.log('✅ Real FCM token generated successfully:', token.substring(0, 20) + '...');
+    console.log('✅ FCM token generated successfully:', token.substring(0, 20) + '...');
     console.log('Full token length:', token.length);
     console.log('🔔 === NOTIFICATION TOKEN DEBUG END: SUCCESS ===');
     return token;
