@@ -28,30 +28,16 @@ const MessageModal = ({ friend, isOpen, onClose }) => {
       setSending(true);
       setDebugInfo('Starting to send greeting...');
       
-      console.log('=== GREETING DEBUG START ===');
-      console.log('Auth User:', authUser.uid, userProfile?.username);
-      console.log('Friend:', friend.uid, friend.username);
-      console.log('Greeting message:', greetingMessage);
+      
       
       // Step 1: Send the message to Firestore
-      setDebugInfo('Step 1: Sending message to Firestore...');
-      console.log('Step 1: Sending message to Firestore...');
+      setDebugInfo('Sending message...');
       
       const messageResult = await sendMessage(authUser.uid, friend.uid, greetingMessage);
-      console.log('Message sent to Firestore:', messageResult);
-      setDebugInfo('Step 1: ✅ Message sent to Firestore');
-      
-      // Step 2: Send notification
-      setDebugInfo('Step 2: Sending push notification...');
-      console.log('Step 2: Sending push notification...');
+      setDebugInfo('Message sent, sending notification...');
       
       await sendMessageNotification(userProfile, friend.uid, greetingMessage);
-      console.log('Step 2: ✅ Push notification sent');
-      setDebugInfo('Step 2: ✅ Push notification sent');
-      
-      // Step 3: Success
       setDebugInfo('✅ Greeting sent successfully!');
-      console.log('=== GREETING DEBUG END: SUCCESS ===');
       
       // Close modal after 2 seconds
       setTimeout(() => {
@@ -61,7 +47,7 @@ const MessageModal = ({ friend, isOpen, onClose }) => {
       }, 2000);
       
     } catch (error) {
-      console.error('=== GREETING DEBUG ERROR ===', error);
+      console.error('Error sending greeting:', error);
       
       // Check if it's a notification token error
       if (error.message.includes('no notification token') || error.message.includes('User has no notification token')) {

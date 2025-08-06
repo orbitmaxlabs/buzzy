@@ -1,158 +1,171 @@
-import { sendNotificationToUser } from '../firebase.js';
+import { sendNotificationToUser } from '../firebase';
 
 // Send friend request notification
-export const sendFriendRequestNotification = async (fromUser, toUid) => {
+export const sendFriendRequestNotification = async (fromUser, toUser) => {
   try {
     const notification = {
       title: 'New Friend Request',
-      body: `${fromUser.username} sent you a friend request!`,
+      body: `${fromUser.username} wants to be your friend!`,
       data: {
         type: 'friend_request',
         fromUid: fromUser.uid,
-        fromUsername: fromUser.username,
-        action: 'view_friend_requests'
+        fromUsername: fromUser.username
       }
     };
-    
-    const result = await sendNotificationToUser(toUid, notification);
+
+    const result = await sendNotificationToUser(toUser.uid, notification);
     
     if (result.success) {
-      console.log('✅ Friend request notification sent successfully');
+      return { success: true };
     } else {
-      console.log('⚠️ Friend request notification failed:', result.message);
+      return { success: false, message: result.message };
     }
   } catch (error) {
-    console.error('❌ Error sending friend request notification:', error);
+    return { success: false, message: error.message };
   }
 };
 
 // Send friend request response notification
-export const sendFriendRequestResponseNotification = async (fromUser, toUid, accepted) => {
+export const sendFriendRequestResponseNotification = async (fromUser, toUser, accepted) => {
   try {
+    const action = accepted ? 'accepted' : 'declined';
     const notification = {
-      title: accepted ? 'Friend Request Accepted!' : 'Friend Request Declined',
-      body: accepted 
-        ? `${fromUser.username} accepted your friend request!`
-        : `${fromUser.username} declined your friend request.`,
+      title: 'Friend Request Response',
+      body: `${fromUser.username} ${action} your friend request`,
       data: {
         type: 'friend_request_response',
         fromUid: fromUser.uid,
         fromUsername: fromUser.username,
-        accepted: accepted,
-        action: accepted ? 'view_friends' : 'view_profile'
+        action: action
       }
     };
-    
-    const result = await sendNotificationToUser(toUid, notification);
+
+    const result = await sendNotificationToUser(toUser.uid, notification);
     
     if (result.success) {
-      console.log('✅ Friend request response notification sent successfully');
+      return { success: true };
     } else {
-      console.log('⚠️ Friend request response notification failed:', result.message);
+      return { success: false, message: result.message };
     }
   } catch (error) {
-    console.error('❌ Error sending friend request response notification:', error);
+    return { success: false, message: error.message };
   }
 };
 
-// Send friend added notification to both users
-export const sendFriendAddedNotification = async (user1Uid, user1Username, user2Username) => {
+// Send friend added notification
+export const sendFriendAddedNotification = async (user1, user2) => {
   try {
     // Send notification to user 1
     const notification1 = {
-      title: 'New Friend Added!',
-      body: `You are now friends with ${user2Username}!`,
+      title: 'New Friend Added',
+      body: `You are now friends with ${user2.username}!`,
       data: {
         type: 'friend_added',
-        friendUsername: user2Username,
-        action: 'view_friends'
+        friendUid: user2.uid,
+        friendUsername: user2.username
       }
     };
+
+    const result1 = await sendNotificationToUser(user1.uid, notification1);
     
-    const result = await sendNotificationToUser(user1Uid, notification1);
-    
-    if (result.success) {
-      console.log('✅ Friend added notification sent to user 1');
+    if (result1.success) {
+      // Send notification to user 2
+      const notification2 = {
+        title: 'New Friend Added',
+        body: `You are now friends with ${user1.username}!`,
+        data: {
+          type: 'friend_added',
+          friendUid: user1.uid,
+          friendUsername: user1.username
+        }
+      };
+
+      const result2 = await sendNotificationToUser(user2.uid, notification2);
+      
+      if (result2.success) {
+        return { success: true };
+      } else {
+        return { success: false, message: result2.message };
+      }
     } else {
-      console.log('⚠️ Friend added notification failed for user 1:', result.message);
+      return { success: false, message: result1.message };
     }
   } catch (error) {
-    console.error('❌ Error sending friend added notification to user 1:', error);
+    return { success: false, message: error.message };
   }
 };
 
-// Send welcome notification to new users
-export const sendWelcomeNotification = async (uid, username) => {
+// Send welcome notification
+export const sendWelcomeNotification = async (user) => {
   try {
     const notification = {
-      title: 'Welcome to Buzzy! 🎉',
-      body: `Hi ${username}! Start connecting with friends and stay in the loop!`,
+      title: 'Welcome to Buzzy!',
+      body: `Hi ${user.username}! Welcome to Buzzy. Start adding friends to get notifications!`,
       data: {
         type: 'welcome',
-        action: 'view_profile'
+        username: user.username
       }
     };
-    
-    const result = await sendNotificationToUser(uid, notification);
+
+    const result = await sendNotificationToUser(user.uid, notification);
     
     if (result.success) {
-      console.log('✅ Welcome notification sent successfully');
+      return { success: true };
     } else {
-      console.log('⚠️ Welcome notification failed:', result.message);
+      return { success: false, message: result.message };
     }
   } catch (error) {
-    console.error('❌ Error sending welcome notification:', error);
+    return { success: false, message: error.message };
   }
 };
 
 // Send message notification
-export const sendMessageNotification = async (fromUser, toUid, messageText) => {
+export const sendMessageNotification = async (fromUser, toUser, message) => {
   try {
     const notification = {
-      title: `New message from ${fromUser.username}`,
-      body: messageText.length > 50 ? messageText.substring(0, 50) + '...' : messageText,
+      title: `Message from ${fromUser.username}`,
+      body: message.length > 50 ? message.substring(0, 50) + '...' : message,
       data: {
         type: 'message',
         fromUid: fromUser.uid,
         fromUsername: fromUser.username,
-        messageText: messageText,
-        action: 'view_messages'
+        message: message
       }
     };
-    
-    const result = await sendNotificationToUser(toUid, notification);
+
+    const result = await sendNotificationToUser(toUser.uid, notification);
     
     if (result.success) {
-      console.log('✅ Message notification sent successfully');
+      return { success: true };
     } else {
-      console.log('⚠️ Message notification failed:', result.message);
+      return { success: false, message: result.message };
     }
   } catch (error) {
-    console.error('❌ Error sending message notification:', error);
+    return { success: false, message: error.message };
   }
 };
 
 // Send system notification
-export const sendSystemNotification = async (uid, title, body, data = {}) => {
+export const sendSystemNotification = async (user, title, body, data = {}) => {
   try {
     const notification = {
-      title,
-      body,
+      title: title,
+      body: body,
       data: {
         type: 'system',
         ...data
       }
     };
-    
-    const result = await sendNotificationToUser(uid, notification);
+
+    const result = await sendNotificationToUser(user.uid, notification);
     
     if (result.success) {
-      console.log('✅ System notification sent successfully');
+      return { success: true };
     } else {
-      console.log('⚠️ System notification failed:', result.message);
+      return { success: false, message: result.message };
     }
   } catch (error) {
-    console.error('❌ Error sending system notification:', error);
+    return { success: false, message: error.message };
   }
 };
 

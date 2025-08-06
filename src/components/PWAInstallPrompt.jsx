@@ -18,7 +18,7 @@ const PWAInstallPrompt = () => {
 
     // Listen for beforeinstallprompt event
     const handleBeforeInstallPrompt = (e) => {
-      console.log('🎯 === PWA INSTALL PROMPT AVAILABLE ===');
+  
       e.preventDefault();
       setDeferredPrompt(e);
       setShowInstallPrompt(true);
@@ -26,7 +26,7 @@ const PWAInstallPrompt = () => {
 
     // Listen for appinstalled event
     const handleAppInstalled = () => {
-      console.log('🎯 === PWA INSTALLED ===');
+
       setIsInstalled(true);
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
@@ -47,21 +47,15 @@ const PWAInstallPrompt = () => {
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
 
-    console.log('🎯 === INSTALLING PWA ===');
-    
     // Show the install prompt
     deferredPrompt.prompt();
     
     // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
-    console.log('User choice:', outcome);
     
     if (outcome === 'accepted') {
-      console.log('✅ User accepted the install prompt');
       setIsInstalled(true);
       setShowInstallPrompt(false);
-    } else {
-      console.log('❌ User dismissed the install prompt');
     }
     
     // Clear the deferredPrompt

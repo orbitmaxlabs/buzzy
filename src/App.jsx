@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import { useAuth } from './contexts/AuthContext.jsx'
 import NotificationBell from './components/NotificationBell.jsx'
-import RefreshTokenButton from './components/RefreshTokenButton.jsx'
 import PWAInstallPrompt from './components/PWAInstallPrompt.jsx'
-import FCMDiagnostic from './components/FCMDiagnostic.jsx'
+import NotificationTest from './components/NotificationTest.jsx'
 
 import { 
   searchUsersByUsername, 
@@ -41,9 +40,7 @@ function App() {
 
   // Initialize PWA features
   useEffect(() => {
-    initializePWA().then(result => {
-      console.log('PWA initialization result:', result);
-    }).catch(error => {
+    initializePWA().catch(error => {
       console.error('PWA initialization error:', error);
     });
   }, []);
@@ -220,9 +217,7 @@ function App() {
         }
       };
 
-      console.log('📱 Sending notification to friend:', friend.username);
       const result = await sendNotificationToUser(friend.id, notification);
-      console.log('📱 Notification result:', result);
 
       // Simulate some processing time
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -451,6 +446,7 @@ function App() {
     <div className="app">
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />
+      <NotificationTest />
       
       {/* Top Bar */}
       <header className="top-bar">
@@ -477,7 +473,6 @@ function App() {
             </button>
           )}
           <NotificationBell />
-          <RefreshTokenButton />
         </div>
       </header>
 
@@ -725,50 +720,6 @@ function App() {
         </main>
       )}
 
-      {/* Test Notification Button */}
-      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
-        <button
-          onClick={async () => {
-            if (authUser && userProfile) {
-              try {
-                const notification = {
-                  title: 'Test Notification',
-                  body: 'This is a test notification from Buzzy!',
-                  data: {
-                    type: 'test',
-                    timestamp: Date.now()
-                  }
-                };
-                
-                const result = await sendNotificationToUser(authUser.uid, notification);
-                if (result.success) {
-                  alert('✅ Test notification sent successfully!');
-                } else {
-                  alert(`❌ Test notification failed: ${result.message}`);
-                }
-              } catch (error) {
-                alert(`❌ Error sending test notification: ${error.message}`);
-              }
-            }
-          }}
-          style={{
-            padding: '10px 15px',
-            backgroundColor: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '500'
-          }}
-        >
-          Test Notification
-        </button>
-      </div>
-
-      {/* FCM Diagnostic Tool */}
-      <FCMDiagnostic />
-      
     </div>
   )
 }

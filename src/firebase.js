@@ -19,7 +19,6 @@ export const googleProvider = new GoogleAuthProvider();
 let messaging = null;
 try {
   messaging = getMessaging(app);
-  console.log('Firebase messaging initialized successfully');
 } catch (error) {
   console.error('Failed to initialize Firebase messaging:', error);
 }
@@ -296,7 +295,6 @@ export const cleanupDuplicateFriends = async (uid) => {
         batch.delete(docRef);
       });
       await batch.commit();
-      console.log(`Cleaned up ${duplicateDocs.length} duplicate friend entries for user ${uid}`);
     }
   } catch (error) {
     console.error('Error cleaning up duplicate friends:', error);
@@ -305,7 +303,7 @@ export const cleanupDuplicateFriends = async (uid) => {
 
 export default app;
 
-// Simplified notification functions
+// Notification functions
 export const requestNotificationPermission = async () => {
   try {
     if (!('Notification' in window)) {
@@ -322,73 +320,46 @@ export const requestNotificationPermission = async () => {
 
 export const getNotificationToken = async () => {
   try {
-    console.log('🔔 === NOTIFICATION TOKEN DEBUG START ===');
-
-    // Ensure messaging is available. The initial initialization can fail in
-    // some environments (for example when the module loads before Firebase
-    // features are fully supported in the browser). If it's missing, attempt
-    // to reinitialize it here so token generation can proceed.
     if (!messaging) {
       try {
         messaging = getMessaging(app);
-        console.log('Firebase messaging reinitialized successfully');
       } catch (error) {
         console.error('Failed to reinitialize Firebase messaging:', error);
         throw new Error('Firebase messaging not initialized');
       }
     }
     
-    console.log('✅ Firebase messaging is available');
-    
     if (!('Notification' in window)) {
       throw new Error('Notifications are not supported in this browser');
     }
-    
-    console.log('✅ Notifications are supported');
-    console.log('📱 Current notification permission:', Notification.permission);
     
     if (Notification.permission === 'denied') {
       throw new Error('Notification permission is denied. Please enable notifications in your browser settings.');
     }
     
     if (Notification.permission === 'default') {
-      console.log('🔔 Requesting notification permission...');
       const permission = await Notification.requestPermission();
-      console.log('📱 Permission result:', permission);
       if (permission !== 'granted') {
         throw new Error('Notification permission denied by user');
       }
     }
-    
-    console.log('✅ Notification permission granted');
     
     // Register service worker if needed
     if (!('serviceWorker' in navigator)) {
       throw new Error('Service workers are not supported in this browser');
     }
     
-    console.log('✅ Service workers are supported');
-    
     let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
     if (!registration) {
-      console.log('🔧 Registering Firebase messaging service worker...');
       registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
         scope: '/'
       });
-      console.log('✅ Service worker registered:', registration);
-    } else {
-      console.log('✅ Existing service worker found:', registration);
     }
     
     // Wait for service worker to be ready
-    console.log('⏳ Waiting for service worker to be ready...');
     await navigator.serviceWorker.ready;
-    console.log('✅ Service worker is ready');
     
-    // Get FCM token with better error handling
-    console.log('🔑 Attempting to get FCM token...');
-    console.log('🔑 Using VAPID key:', 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM');
-    
+    // Get FCM token
     const token = await getToken(messaging, {
       vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
       serviceWorkerRegistration: registration
@@ -398,25 +369,9 @@ export const getNotificationToken = async () => {
       throw new Error('Failed to generate FCM token - token is null or empty');
     }
     
-    console.log('✅ FCM token generated successfully:', token.substring(0, 20) + '...');
     return token;
   } catch (error) {
-    console.error('❌ Error getting notification token:', error);
-    console.error('❌ Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
-    
-    // Provide more specific error messages
-    if (error.message.includes('push service error')) {
-      console.error('🔧 This usually means:');
-      console.error('1. VAPID key is incorrect');
-      console.error('2. Firebase project is not properly configured for FCM');
-      console.error('3. Domain is not authorized in Firebase Console');
-      console.error('4. HTTPS is required for FCM to work');
-    }
-    
+    console.error('Error getting notification token:', error);
     throw error;
   }
 };
@@ -550,7 +505,6 @@ export const markNotificationAsRead = async (notificationId) => {
 export const onForegroundMessage = (callback) => {
   if (!messaging) return () => {};
   return onMessage(messaging, (payload) => {
-    console.log('Foreground message received:', payload);
     callback(payload);
   });
 };
