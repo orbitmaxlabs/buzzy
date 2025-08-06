@@ -5,7 +5,7 @@ import { useNotifications } from '../contexts/NotificationContext';
 
 const NotificationTest = () => {
   const { currentUser } = useAuth();
-  const { notificationStatus, requestNotificationPermission, refreshToken } = useNotifications();
+  const { notificationStatus, requestNotificationPermission } = useNotifications();
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +19,6 @@ const NotificationTest = () => {
     setStatus('Testing notifications...');
 
     try {
-      // Step 1: Check if notifications are enabled
       if (!notificationStatus.enabled) {
         setStatus('Setting up notifications...');
         const result = await requestNotificationPermission();
@@ -29,7 +28,6 @@ const NotificationTest = () => {
         }
       }
 
-      // Step 2: Send test notification
       setStatus('Sending test notification...');
       const result = await sendNotificationToUser(currentUser.uid, {
         title: 'Test Notification',
@@ -49,36 +47,12 @@ const NotificationTest = () => {
     }
   };
 
-  const refreshNotificationToken = async () => {
-    if (!currentUser) {
-      setStatus('Please log in first');
-      return;
-    }
-
-    setLoading(true);
-    setStatus('Refreshing token...');
-
-    try {
-      const result = await refreshToken();
-      if (result) {
-        setStatus('✅ Token refreshed successfully!');
-      } else {
-        setStatus('❌ Failed to refresh token');
-      }
-    } catch (error) {
-      setStatus(`❌ Error: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (!currentUser) return null;
 
   return (
     <div className="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-lg shadow-lg p-4 max-w-sm z-50">
       <h3 className="text-lg font-semibold mb-2">🔔 Notification Status</h3>
       
-      {/* Status Display */}
       <div className="mb-3 text-sm">
         <div className="flex items-center mb-1">
           <span className={`w-2 h-2 rounded-full mr-2 ${
@@ -98,24 +72,13 @@ const NotificationTest = () => {
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="space-y-2">
-        <button
-          onClick={testNotifications}
-          disabled={loading}
-          className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50 text-sm"
-        >
-          {loading ? 'Testing...' : 'Test Notifications'}
-        </button>
-
-        <button
-          onClick={refreshNotificationToken}
-          disabled={loading}
-          className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50 text-sm"
-        >
-          {loading ? 'Refreshing...' : 'Refresh Token'}
-        </button>
-      </div>
+      <button
+        onClick={testNotifications}
+        disabled={loading}
+        className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50 text-sm"
+      >
+        {loading ? 'Testing...' : 'Test Notifications'}
+      </button>
 
       {status && (
         <div className="mt-3 text-sm text-gray-600">

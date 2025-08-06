@@ -1,43 +1,30 @@
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  setupUserNotifications,
-  checkUserNotificationStatus,
-  refreshNotificationToken,
-  onForegroundMessage
-} from '../firebase';
+import { setupUserNotifications, checkUserNotificationStatus, onForegroundMessage } from '../firebase';
 import { useAuth } from './AuthContext';
 
 const NotificationContext = createContext();
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
-  }
+  if (!context) throw new Error('useNotifications must be used within a NotificationProvider');
   return context;
 };
 
 export const NotificationProvider = ({ children }) => {
   const { currentUser } = useAuth();
   const [notificationStatus, setNotificationStatus] = useState({
-    enabled: false,
-    permission: 'default',
-    hasToken: false,
-    lastUpdate: null
+    enabled: false, permission: 'default', hasToken: false, lastUpdate: null
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
 
-  // Check notification status when user changes
   useEffect(() => {
     if (currentUser) {
       checkNotificationStatus();
     }
   }, [currentUser]);
 
-  // Auto-setup notifications on app launch
   useEffect(() => {
     if (currentUser && !loading) {
       autoSetupNotifications();
@@ -48,8 +35,6 @@ export const NotificationProvider = ({ children }) => {
     try {
       const status = await checkUserNotificationStatus(currentUser.uid);
       setNotificationStatus(status);
-      
-      // Show permission prompt if needed
       if (status.permission === 'default' && !status.enabled) {
         setShowPermissionPrompt(true);
       }
@@ -60,18 +45,13 @@ export const NotificationProvider = ({ children }) => {
 
   const autoSetupNotifications = async () => {
     if (!currentUser || loading) return;
-
     try {
       setLoading(true);
       setError(null);
-
-      // Check if we need to setup notifications
       const status = await checkUserNotificationStatus(currentUser.uid);
-      
       if (!status.enabled && status.permission !== 'denied') {
-        console.log('🔄 Auto-setting up notifications...');
         await setupUserNotifications(currentUser.uid);
-        await checkNotificationStatus(); // Refresh status
+        await checkNotificationStatus();
       }
     } catch (error) {
       console.error('Auto-setup error:', error);
@@ -86,10 +66,7 @@ export const NotificationProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       setShowPermissionPrompt(false);
-
-      console.log('🔔 User requested notification permission');
       const result = await setupUserNotifications(currentUser.uid);
-      
       if (result.success) {
         await checkNotificationStatus();
         return true;
@@ -106,47 +83,15 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
-  const refreshToken = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const result = await refreshNotificationToken(currentUser.uid);
-      
-      if (result.success) {
-        await checkNotificationStatus();
-        return true;
-      } else {
-        setError('Failed to refresh token');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error refreshing token:', error);
-      setError(error.message);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const dismissPermissionPrompt = () => {
-    setShowPermissionPrompt(false);
-  };
+  const dismissPermissionPrompt = () => setShowPermissionPrompt(false);
 
   return (
     <NotificationContext.Provider value={{
-      notificationStatus,
-      loading,
-      error,
-      showPermissionPrompt,
-      requestNotificationPermission,
-      refreshToken,
-      dismissPermissionPrompt,
-      checkNotificationStatus
+      notificationStatus, loading, error, showPermissionPrompt,
+      requestNotificationPermission, dismissPermissionPrompt, checkNotificationStatus
     }}>
       {children}
       
-      {/* Modern Permission Prompt */}
       {showPermissionPrompt && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">

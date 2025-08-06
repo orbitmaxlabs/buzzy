@@ -1,231 +1,99 @@
-// PWA Utilities for better service worker management and PWA features
+let deferredPrompt = null;
+let installStatus = null;
 
-// Register service workers with proper error handling
-export const registerServiceWorkers = async () => {
+export const initializePWA = async () => {
   try {
-    if (!('serviceWorker' in navigator)) {
-      return false;
-    }
-    
-    // Register PWA service worker (handled by Vite PWA plugin)
-    
-    // Register Firebase messaging service worker (ensure correct worker is used)
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    let registration = registrations.find(r => r.active?.scriptURL.includes('firebase-messaging-sw.js'));
-    if (!registration) {
-      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-        scope: '/'
-      });
-    }
-
-    // Wait for the service worker system to be ready
-    await navigator.serviceWorker.ready;
-
-    // Set up update handling for the Firebase messaging service worker
-    registration.addEventListener('updatefound', () => {
-      const newWorker = registration.installing;
-
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          // You can show a notification to the user here
-          showUpdateNotification();
-        }
-      });
-    });
-
-    return true;
+    await registerServiceWorkers();
+    setupEventListeners();
+    setupOfflineDetection();
+    return { success: true, installStatus };
   } catch (error) {
-    console.error('Error registering service workers:', error);
-    return false;
+    console.error('PWA initialization error:', error);
+    return { success: false, error: error.message };
   }
 };
 
-// Show update notification
-const showUpdateNotification = () => {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('Buzzy Update Available', {
-      body: 'A new version is available. Please refresh the page.',
-      icon: '/android/android-launchericon-192-192.png',
-      badge: '/android/android-launchericon-48-48.png',
-      tag: 'update-notification',
-      requireInteraction: true
-    });
-  }
-};
-
-// Check PWA install status
-export const getPWAInstallStatus = () => {
-  return new Promise((resolve) => {
-    if (!('BeforeInstallPromptEvent' in window)) {
-      resolve({ canInstall: false, isInstalled: false });
-      return;
-    }
-
-    // Check if app is already installed
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
-                       window.navigator.standalone === true;
-
-    // Check if install prompt is available
-    let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-    });
-
-    resolve({
-      canInstall: !!deferredPrompt,
-      isInstalled: isInstalled,
-      deferredPrompt: deferredPrompt
-    });
-  });
-};
-
-// Handle PWA installation
-export const handlePWAInstallation = async () => {
-  return new Promise((resolve) => {
-    if (!('BeforeInstallPromptEvent' in window)) {
-      resolve({ success: false, reason: 'not_supported' });
-      return;
-    }
-
-    // Check if already installed
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
-                       window.navigator.standalone === true;
-
-    if (isInstalled) {
-      resolve({ success: false, reason: 'already_installed' });
-      return;
-    }
-
-    // Wait for install prompt
-    let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-    });
-
-    // Check if prompt is available
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
+const registerServiceWorkers = async () => {
+  if ('serviceWorker' in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+      console.log('✅ Firebase messaging service worker registered:', registration);
       
-      deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-          resolve({ success: true, reason: 'user_accepted' });
-        } else {
-          resolve({ success: false, reason: 'user_declined' });
-        }
-        deferredPrompt = null;
+      await navigator.serviceWorker.ready;
+      console.log('✅ Firebase messaging service worker is ready');
+      
+      registration.addEventListener('updatefound', () => {
+        console.log('🔄 Service worker update found');
+        const newWorker = registration.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('🔄 New service worker installed, ready for activation');
+          }
+        });
       });
-    } else {
-      resolve({ success: false, reason: 'prompt_not_available' });
+      
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('🎯 Service worker controller changed');
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    } catch (error) {
+      console.error('Error registering service worker:', error);
     }
-  });
+  }
 };
 
-// Set up PWA event listeners
-export const setupPWAEventListeners = () => {
-  // Listen for install prompt
+const setupEventListeners = () => {
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
-    // Store the event for later use
-    window.deferredPrompt = e;
+    deferredPrompt = e;
+    installStatus = { canInstall: true, prompt: e };
   });
 
-  // Listen for successful installation
   window.addEventListener('appinstalled', () => {
-    // Hide the install button
-    const installButton = document.getElementById('pwa-install-button');
-    if (installButton) {
-      installButton.style.display = 'none';
-    }
-    
-    // Show success message
-    const successMessage = document.getElementById('pwa-success-message');
-    if (successMessage) {
-      successMessage.style.display = 'block';
-    }
-  });
-
-  // Listen for service worker controller changes
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    // Show update notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Buzzy Updated', {
-        body: 'A new version of the app is available. Please refresh the page when convenient.',
-        icon: '/android/android-launchericon-192-192.png',
-        badge: '/android/android-launchericon-48-48.png',
-        tag: 'update-notification',
-        requireInteraction: true
-      });
-    }
+    console.log('🎯 === PWA INSTALLED ===');
+    deferredPrompt = null;
+    installStatus = { installed: true };
   });
 };
 
-// Show/hide custom install button
-export const showCustomInstallButton = () => {
-  const installButton = document.getElementById('pwa-install-button');
-  if (installButton) {
-    installButton.style.display = 'block';
-  }
-};
-
-export const hideCustomInstallButton = () => {
-  const installButton = document.getElementById('pwa-install-button');
-  if (installButton) {
-    installButton.style.display = 'none';
-  }
-};
-
-export const showInstallSuccessMessage = () => {
-  const successMessage = document.getElementById('pwa-success-message');
-  if (successMessage) {
-    successMessage.style.display = 'block';
-  }
-};
-
-// Set up offline detection
-export const setupOfflineDetection = () => {
+const setupOfflineDetection = () => {
   const updateOnlineStatus = () => {
     const isOnline = navigator.onLine;
-    
+    console.log('🌐 Online status:', isOnline);
     if (isOnline) {
-      // App is online
+      console.log('✅ App is online');
     } else {
-      // App is offline
+      console.log('❌ App is offline');
     }
   };
 
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
-  
-  // Initial check
   updateOnlineStatus();
 };
 
-// Main PWA initialization function
-export const initializePWA = async () => {
+export const getPWAInstallStatus = () => {
+  return installStatus || { canInstall: false, installed: false };
+};
+
+export const handlePWAInstallation = async () => {
+  if (!deferredPrompt) {
+    return { success: false, message: 'Install prompt not available' };
+  }
+
   try {
-    // Register service workers
-    await registerServiceWorkers();
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
     
-    // Set up event listeners
-    setupPWAEventListeners();
-    
-    // Set up offline detection
-    setupOfflineDetection();
-    
-    // Get install status
-    const installStatus = await getPWAInstallStatus();
-    
-    return {
-      success: true,
-      installStatus: installStatus
-    };
+    if (outcome === 'accepted') {
+      return { success: true, message: 'PWA installation accepted' };
+    } else {
+      return { success: false, message: 'PWA installation declined' };
+    }
   } catch (error) {
-    console.error('Error initializing PWA:', error);
-    return {
-      success: false,
-      error: error.message
-    };
+    return { success: false, message: error.message };
   }
 }; 
