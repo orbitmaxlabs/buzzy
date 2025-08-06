@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, orderBy, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // Load Firebase configuration from a single shared file
@@ -550,20 +550,22 @@ export const getUserNotifications = async (uid) => {
   try {
     const notificationsRef = collection(db, 'notifications');
     const q = query(
-      notificationsRef, 
+      notificationsRef,
       where('targetUid', '==', uid),
-      where('read', '==', false)
+      orderBy('createdAt', 'desc')
     );
     const querySnapshot = await getDocs(q);
-    
+
     const notifications = [];
     querySnapshot.forEach((doc) => {
+      const data = doc.data();
       notifications.push({
         id: doc.id,
-        ...doc.data()
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt
       });
     });
-    
+
     return notifications;
   } catch (error) {
     console.error('Error getting user notifications:', error);
