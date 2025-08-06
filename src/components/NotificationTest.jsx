@@ -1,100 +1,146 @@
 import React, { useState } from 'react';
-import { setupUserNotifications, sendNotificationToUser } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { useNotifications } from '../contexts/NotificationContext';
+import { 
+  requestNotificationPermission, 
+  getNotificationToken, 
+  saveNotificationToken,
+  setupUserNotifications,
+  checkUserNotificationStatus
+} from '../firebase';
 
 const NotificationTest = () => {
   const { currentUser } = useAuth();
-  const { notificationStatus, requestNotificationPermission } = useNotifications();
-  const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState('');
 
-  const testNotifications = async () => {
+  const testNotificationSetup = async () => {
     if (!currentUser) {
-      console.log('❌ No current user for testing');
       setStatus('Please log in first');
       return;
     }
 
-    console.log('🧪 === TESTING NOTIFICATIONS ===');
-    console.log('👤 Testing for user:', currentUser.uid);
-    console.log('📊 Current notification status:', notificationStatus);
-    
     setLoading(true);
-    setStatus('Testing notifications...');
+    setStatus('Testing notification setup...');
 
     try {
-      if (!notificationStatus.enabled) {
-        console.log('🔔 Setting up notifications first...');
-        setStatus('Setting up notifications...');
-        const result = await requestNotificationPermission();
-        console.log('📊 Setup result:', result);
-        if (!result) {
-          console.log('❌ Failed to setup notifications');
-          setStatus('❌ Failed to setup notifications');
-          return;
-        }
+      // Step 1: Check current status
+      setStatus('Checking current notification status...');
+      const currentStatus = await checkUserNotificationStatus(currentUser.uid);
+      console.log('Current notification status:', currentStatus);
+
+      // Step 2: Request permission
+      setStatus('Requesting notification permission...');
+      const permissionGranted = await requestNotificationPermission();
+      if (!permissionGranted) {
+        setStatus('❌ Notification permission denied');
+        return;
       }
 
-      console.log('📤 Sending test notification...');
-      setStatus('Sending test notification...');
-      const result = await sendNotificationToUser(currentUser.uid, {
-        title: 'Test Notification',
-        body: 'Notifications are working! 🎉',
-        data: { type: 'test' }
-      });
+      // Step 3: Generate token
+      setStatus('Generating FCM token...');
+      const token = await getNotificationToken();
+      console.log('Generated token:', token.substring(0, 50) + '...');
 
-      console.log('📊 Test result:', result);
+      // Step 4: Save token
+      setStatus('Saving notification token...');
+      await saveNotificationToken(currentUser.uid, token);
+
+      // Step 5: Complete setup
+      setStatus('Completing notification setup...');
+      const result = await setupUserNotifications(currentUser.uid);
+      
       if (result.success) {
-        console.log('✅ Test notification sent successfully');
-        setStatus('✅ Notifications working! Check your device.');
+        setStatus('✅ Notification setup completed successfully!');
+        console.log('Setup result:', result);
       } else {
-        console.log('❌ Test notification failed:', result.message);
-        setStatus(`❌ Notification failed: ${result.message}`);
+        setStatus('❌ Notification setup failed');
       }
+
     } catch (error) {
-      console.error('❌ Test error:', error);
+      console.error('Notification test error:', error);
       setStatus(`❌ Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!currentUser) return null;
+  const testSimpleToken = async () => {
+    if (!currentUser) {
+      setStatus('Please log in first');
+      return;
+    }
+
+    setLoading(true);
+    setStatus('Testing simple token generation...');
+
+    try {
+      const token = await getNotificationToken();
+      setStatus(`✅ Token generated: ${token.substring(0, 30)}...`);
+      console.log('Full token:', token);
+    } catch (error) {
+      console.error('Token generation error:', error);
+      setStatus(`❌ Token generation failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-lg shadow-lg p-4 max-w-sm z-50">
-      <h3 className="text-lg font-semibold mb-2">🔔 Notification Status</h3>
+    <div style={{ 
+      position: 'fixed', 
+      bottom: '80px', 
+      right: '20px', 
+      zIndex: 1000,
+      background: '#fff',
+      padding: '15px',
+      borderRadius: '8px',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+      border: '1px solid #ddd',
+      maxWidth: '300px'
+    }}>
+      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>🔔 Notification Test</h4>
       
-      <div className="mb-3 text-sm">
-        <div className="flex items-center mb-1">
-          <span className={`w-2 h-2 rounded-full mr-2 ${
-            notificationStatus.enabled ? 'bg-green-500' : 'bg-red-500'
-          }`}></span>
-          <span>Enabled: {notificationStatus.enabled ? 'Yes' : 'No'}</span>
-        </div>
-        <div className="flex items-center mb-1">
-          <span className="w-2 h-2 rounded-full mr-2 bg-blue-500"></span>
-          <span>Permission: {notificationStatus.permission}</span>
-        </div>
-        <div className="flex items-center">
-          <span className={`w-2 h-2 rounded-full mr-2 ${
-            notificationStatus.hasToken ? 'bg-green-500' : 'bg-red-500'
-          }`}></span>
-          <span>Token: {notificationStatus.hasToken ? 'Valid' : 'Missing'}</span>
-        </div>
+      <div style={{ marginBottom: '10px' }}>
+        <button 
+          onClick={testSimpleToken}
+          disabled={loading}
+          style={{ 
+            marginRight: '5px',
+            padding: '5px 10px',
+            fontSize: '12px',
+            background: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: loading ? 'not-allowed' : 'pointer'
+          }}
+        >
+          Test Token
+        </button>
+        
+        <button 
+          onClick={testNotificationSetup}
+          disabled={loading}
+          style={{ 
+            padding: '5px 10px',
+            fontSize: '12px',
+            background: '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: loading ? 'not-allowed' : 'pointer'
+          }}
+        >
+          Full Setup
+        </button>
       </div>
-
-      <button
-        onClick={testNotifications}
-        disabled={loading}
-        className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50 text-sm"
-      >
-        {loading ? 'Testing...' : 'Test Notifications'}
-      </button>
-
+      
       {status && (
-        <div className="mt-3 text-sm text-gray-600">
+        <div style={{ 
+          fontSize: '12px', 
+          color: status.includes('❌') ? '#dc3545' : status.includes('✅') ? '#28a745' : '#6c757d',
+          wordBreak: 'break-word'
+        }}>
           {status}
         </div>
       )}

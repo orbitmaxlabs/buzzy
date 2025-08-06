@@ -1,5 +1,19 @@
 import { sendNotificationToUser } from '../firebase';
 
+export const sendWelcomeNotification = async (userId, username) => {
+  try {
+    const notification = {
+      title: 'Welcome to Buzzy!',
+      body: `Welcome ${username}! We're excited to have you on board.`,
+      data: { type: 'welcome', userId, username }
+    };
+    const result = await sendNotificationToUser(userId, notification);
+    return result.success ? { success: true } : { success: false, message: result.message };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
 export const sendFriendRequestNotification = async (fromUser, toUser) => {
   try {
     const notification = {

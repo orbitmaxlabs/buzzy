@@ -4,5 +4,6 @@
   "projectId": "buzzy-d2b2a",
   "storageBucket": "buzzy-d2b2a.firebasestorage.app",
   "messagingSenderId": "512369963479",
-  "appId": "1:512369963479:web:babd61d660cbd32beadb92"
+  "appId": "1:512369963479:web:babd61d660cbd32beadb92",
+  "vapidKey": "BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM"
 }

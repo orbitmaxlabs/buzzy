@@ -6,6 +6,7 @@ import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // Load Firebase configuration from a single shared file
 const firebaseConfig = await fetch('/firebase-config.json').then(res => res.json());
+const vapidKey = firebaseConfig.vapidKey;
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -391,7 +392,7 @@ export const getNotificationToken = async () => {
     
     console.log('🔑 Generating FCM token with VAPID key...');
     const token = await getToken(messaging, {
-      vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
+      vapidKey: vapidKey,
       serviceWorkerRegistration: registration
     });
     
@@ -416,6 +417,7 @@ export const getNotificationToken = async () => {
 
 export const saveNotificationToken = async (uid, token) => {
   try {
+    // Save token in both places for compatibility
     const tokenRef = doc(db, 'notificationTokens', uid);
     const tokenData = {
       token,
@@ -424,6 +426,13 @@ export const saveNotificationToken = async (uid, token) => {
     };
     
     await setDoc(tokenRef, tokenData);
+    
+    // Also update the user document
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      notificationToken: token,
+      lastTokenUpdate: new Date()
+    });
   } catch (error) {
     console.error('Error saving notification token:', error);
     throw error;
@@ -432,8 +441,17 @@ export const saveNotificationToken = async (uid, token) => {
 
 export const removeNotificationToken = async (uid) => {
   try {
+    // Remove token from both places
     const tokenRef = doc(db, 'notificationTokens', uid);
     await deleteDoc(tokenRef);
+    
+    // Also remove from user document
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      notificationToken: null,
+      notificationEnabled: false,
+      lastTokenUpdate: new Date()
+    });
   } catch (error) {
     console.error('Error removing notification token:', error);
     throw error;
