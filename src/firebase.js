@@ -54,7 +54,12 @@ export const createUserProfile = async (user) => {
     username: username,
     photoURL: getRandomEmoji(),
     createdAt: new Date(),
-    lastActive: new Date()
+    lastActive: new Date(),
+    // Notification settings
+    notificationToken: null,
+    notificationPermission: 'default',
+    notificationEnabled: false,
+    lastTokenUpdate: null
   };
   
   await setDoc(userRef, userData);
@@ -404,26 +409,34 @@ export const removeNotificationToken = async (uid) => {
 
 export const sendNotificationToUser = async (targetUid, notification) => {
   try {
-    // Get the user's notification token from Firestore
-    const tokenRef = doc(db, 'notificationTokens', targetUid);
-    const tokenSnap = await getDoc(tokenRef);
+    // Get the user's notification token from their profile
+    const userRef = doc(db, 'users', targetUid);
+    const userSnap = await getDoc(userRef);
     
-    if (!tokenSnap.exists()) {
+    if (!userSnap.exists()) {
+      return { 
+        success: false, 
+        message: 'User not found',
+        reason: 'user_not_found'
+      };
+    }
+
+    const userData = userSnap.data();
+    const token = userData.notificationToken;
+    
+    if (!token) {
       return { 
         success: false, 
         message: 'User has no notification token',
         reason: 'no_token'
       };
     }
-
-    const tokenData = tokenSnap.data();
-    const token = tokenData.token;
     
-    if (!token) {
+    if (!userData.notificationEnabled) {
       return { 
         success: false, 
-        message: 'Token is null or empty',
-        reason: 'empty_token'
+        message: 'User has notifications disabled',
+        reason: 'notifications_disabled'
       };
     }
     
@@ -563,6 +576,134 @@ export const markMessageAsRead = async (messageId) => {
     });
   } catch (error) {
     console.error('Error marking message as read:', error);
+    throw error;
+  }
+};
+
+// Comprehensive notification setup function
+export const setupUserNotifications = async (uid) => {
+  try {
+    console.log('🔔 Setting up notifications for user:', uid);
+    
+    // Step 1: Check browser support
+    if (!('Notification' in window)) {
+      throw new Error('Notifications are not supported in this browser');
+    }
+    
+    // Step 2: Check current permission status
+    const currentPermission = Notification.permission;
+    console.log('📱 Current notification permission:', currentPermission);
+    
+    // Step 3: Request permission if needed
+    let permissionGranted = false;
+    if (currentPermission === 'denied') {
+      throw new Error('Notification permission is denied. Please enable notifications in your browser settings.');
+    } else if (currentPermission === 'default') {
+      console.log('🔔 Requesting notification permission...');
+      const permission = await Notification.requestPermission();
+      console.log('📱 Permission result:', permission);
+      permissionGranted = permission === 'granted';
+    } else if (currentPermission === 'granted') {
+      permissionGranted = true;
+    }
+    
+    if (!permissionGranted) {
+      throw new Error('Notification permission denied by user');
+    }
+    
+    // Step 4: Generate FCM token
+    console.log('🔑 Generating FCM token...');
+    const token = await getNotificationToken();
+    console.log('✅ FCM token generated:', token.substring(0, 20) + '...');
+    
+    // Step 5: Update user profile with notification data
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      notificationToken: token,
+      notificationPermission: 'granted',
+      notificationEnabled: true,
+      lastTokenUpdate: new Date(),
+      lastActive: new Date()
+    });
+    
+    // Step 6: Also save to separate collection for backward compatibility
+    await saveNotificationToken(uid, token);
+    
+    console.log('✅ Notification setup complete for user:', uid);
+    return {
+      success: true,
+      token: token,
+      permission: 'granted'
+    };
+    
+  } catch (error) {
+    console.error('❌ Error setting up notifications:', error);
+    
+    // Update user profile with error state
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      notificationPermission: Notification.permission,
+      notificationEnabled: false,
+      lastTokenUpdate: new Date(),
+      lastActive: new Date()
+    });
+    
+    throw error;
+  }
+};
+
+// Check if user has notifications enabled
+export const checkUserNotificationStatus = async (uid) => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+    
+    if (!userSnap.exists()) {
+      return { enabled: false, reason: 'user_not_found' };
+    }
+    
+    const userData = userSnap.data();
+    return {
+      enabled: userData.notificationEnabled || false,
+      permission: userData.notificationPermission || 'default',
+      hasToken: !!userData.notificationToken,
+      lastUpdate: userData.lastTokenUpdate
+    };
+  } catch (error) {
+    console.error('Error checking notification status:', error);
+    return { enabled: false, reason: 'error' };
+  }
+};
+
+// Refresh notification token (called periodically)
+export const refreshNotificationToken = async (uid) => {
+  try {
+    console.log('🔄 Refreshing notification token for user:', uid);
+    
+    // Check current permission
+    if (Notification.permission !== 'granted') {
+      throw new Error('Notification permission not granted');
+    }
+    
+    // Generate new token
+    const newToken = await getNotificationToken();
+    
+    // Update user profile
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      notificationToken: newToken,
+      lastTokenUpdate: new Date(),
+      lastActive: new Date()
+    });
+    
+    // Update separate collection
+    await saveNotificationToken(uid, newToken);
+    
+    console.log('✅ Token refreshed successfully');
+    return { success: true, token: newToken };
+    
+  } catch (error) {
+    console.error('❌ Error refreshing token:', error);
     throw error;
   }
 };

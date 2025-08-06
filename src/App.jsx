@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import { useAuth } from './contexts/AuthContext.jsx'
+import { useNotifications } from './contexts/NotificationContext.jsx'
 import NotificationBell from './components/NotificationBell.jsx'
 import PWAInstallPrompt from './components/PWAInstallPrompt.jsx'
 import NotificationTest from './components/NotificationTest.jsx'
@@ -25,6 +26,7 @@ import { initializePWA } from './utils/pwaUtils.js'
 
 function App() {
   const { currentUser: authUser, userProfile, signInWithGoogle, logout: authLogout, updateProfile } = useAuth()
+  const { notificationStatus } = useNotifications()
   const [currentPage, setCurrentPage] = useState('friends') // 'friends' or 'profile'
   const [showAddFriends, setShowAddFriends] = useState(false)
   const [friends, setFriends] = useState([])
