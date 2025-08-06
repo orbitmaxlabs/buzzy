@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { sendMessage } from '../firebase';
 import { sendMessageNotification } from '../utils/notificationUtils';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,9 +16,9 @@ const MessageModal = ({ friend, isOpen, onClose }) => {
       // Automatically send greeting when modal opens
       sendGreeting();
     }
-  }, [isOpen, friend, authUser]);
+  }, [isOpen, friend, authUser, sendGreeting]);
 
-  const sendGreeting = async () => {
+  const sendGreeting = useCallback(async () => {
     if (!authUser || !friend) {
       setDebugInfo('ERROR: Missing authUser or friend data');
       return;
@@ -63,7 +63,7 @@ const MessageModal = ({ friend, isOpen, onClose }) => {
         setDebugInfo('');
       }, 4000);
     }
-  };
+  }, [authUser, friend, userProfile, onClose]);
 
   if (!isOpen || !friend) return null;
 
