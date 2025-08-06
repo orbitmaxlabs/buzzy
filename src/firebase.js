@@ -339,9 +339,19 @@ export const requestNotificationPermission = async () => {
 export const getNotificationToken = async () => {
   try {
     console.log('🔔 === NOTIFICATION TOKEN DEBUG START ===');
-    
+
+    // Ensure messaging is available. The initial initialization can fail in
+    // some environments (for example when the module loads before Firebase
+    // features are fully supported in the browser). If it's missing, attempt
+    // to reinitialize it here so token generation can proceed.
     if (!messaging) {
-      throw new Error('Firebase messaging not initialized');
+      try {
+        messaging = getMessaging(app);
+        console.log('Firebase messaging reinitialized successfully');
+      } catch (error) {
+        console.error('Failed to reinitialize Firebase messaging:', error);
+        throw new Error('Firebase messaging not initialized');
+      }
     }
     
     // Check notification permission

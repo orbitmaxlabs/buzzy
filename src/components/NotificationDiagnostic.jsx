@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 const NotificationDiagnostic = () => {
@@ -199,7 +199,7 @@ const NotificationDiagnostic = () => {
   const registerServiceWorker = async () => {
     addLog('🔧 Registering service worker...', 'info');
     try {
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
         scope: '/'
       });
       await navigator.serviceWorker.ready;
