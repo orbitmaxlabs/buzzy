@@ -33,9 +33,9 @@ const MessageModal = ({ friend, isOpen, onClose }) => {
       // Step 1: Send the message to Firestore
       setDebugInfo('Sending message...');
       
-      const messageResult = await sendMessage(authUser.uid, friend.uid, greetingMessage);
+      await sendMessage(authUser.uid, friend.uid, greetingMessage);
       setDebugInfo('Message sent, sending notification...');
-      
+
       await sendMessageNotification(userProfile, friend.uid, greetingMessage);
       setDebugInfo('✅ Greeting sent successfully!');
       

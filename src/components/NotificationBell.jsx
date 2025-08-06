@@ -4,21 +4,22 @@ import { useAuth } from '../contexts/AuthContext';
 
 const NotificationBell = () => {
   const { currentUser: user } = useAuth();
-  const { 
-    permission, 
-    notifications, 
-    loading, 
-    requestPermission,
-    markAsRead 
+  const {
+    notificationStatus,
+    notifications = [],
+    loading,
+    requestNotificationPermission,
+    markAsRead
   } = useNotifications();
-  
+
+  const permission = notificationStatus?.permission;
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = (notifications || []).filter(n => !n.read).length;
 
   const handlePermissionRequest = async () => {
     if (permission === 'default') {
-      await requestPermission();
+      await requestNotificationPermission();
     }
   };
 
@@ -165,4 +166,4 @@ const NotificationBell = () => {
   );
 };
 
-export default NotificationBell; 
+export default NotificationBell;
