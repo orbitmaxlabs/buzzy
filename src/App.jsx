@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 import { useAuth } from './contexts/AuthContext.jsx'
 import NotificationBell from './components/NotificationBell.jsx'
@@ -44,7 +44,7 @@ function App() {
       loadFriends()
       loadFriendRequests()
     }
-  }, [authUser, userProfile])
+  }, [authUser, userProfile, loadFriends, loadFriendRequests])
 
   useEffect(() => {
     if (userProfile) {
@@ -55,23 +55,23 @@ function App() {
     }
   }, [userProfile])
 
-  const loadFriends = async () => {
+  const loadFriends = useCallback(async () => {
     try {
       const friendsList = await getFriends(authUser.uid)
       setFriends(friendsList)
     } catch (error) {
       console.error('Error loading friends:', error)
     }
-  }
+  }, [authUser])
 
-  const loadFriendRequests = async () => {
+  const loadFriendRequests = useCallback(async () => {
     try {
       const requests = await getFriendRequests(authUser.uid)
       setFriendRequests(requests)
     } catch (error) {
       console.error('Error loading friend requests:', error)
     }
-  }
+  }, [authUser])
 
   const handleSearchUsers = async () => {
     if (!searchQuery.trim()) {

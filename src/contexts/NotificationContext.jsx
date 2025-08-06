@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   setupUserNotifications,
   checkUserNotificationStatus,
@@ -32,19 +32,29 @@ export const NotificationProvider = ({ children }) => {
     if (currentUser) {
       checkNotificationStatus();
     }
-  }, [currentUser]);
+  }, [currentUser, checkNotificationStatus]);
 
   useEffect(() => {
     if (currentUser && !loading) {
       autoSetupNotifications();
     }
-  }, [currentUser, loading]);
+  }, [currentUser, loading, autoSetupNotifications]);
 
-  const checkNotificationStatus = async () => {
+  const loadNotifications = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const list = await getUserNotifications(currentUser.uid);
+      setNotifications(list);
+    } catch (err) {
+      console.error('❌ Error loading notifications:', err);
+    }
+  }, [currentUser]);
+
+  const checkNotificationStatus = useCallback(async () => {
     try {
       console.log('🔍 === CHECKING NOTIFICATION STATUS ===');
       console.log('👤 Current user:', currentUser?.uid);
-      
+
       const status = await checkUserNotificationStatus(currentUser.uid);
       console.log('📊 Status result:', status);
       setNotificationStatus(status);
@@ -60,17 +70,7 @@ export const NotificationProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ Error checking notification status:', error);
     }
-  };
-
-  const loadNotifications = async () => {
-    if (!currentUser) return;
-    try {
-      const list = await getUserNotifications(currentUser.uid);
-      setNotifications(list);
-    } catch (err) {
-      console.error('❌ Error loading notifications:', err);
-    }
-  };
+  }, [currentUser, loadNotifications]);
 
   const markAsRead = async (notificationId) => {
     try {
@@ -99,7 +99,7 @@ export const NotificationProvider = ({ children }) => {
     return unsubscribe;
   }, [currentUser]);
 
-  const autoSetupNotifications = async () => {
+  const autoSetupNotifications = useCallback(async () => {
     if (!currentUser || loading) {
       console.log('⏸️ Auto-setup skipped:', { hasUser: !!currentUser, loading });
       return;
@@ -112,7 +112,7 @@ export const NotificationProvider = ({ children }) => {
 
       const status = await checkUserNotificationStatus(currentUser.uid);
       console.log('📊 Current status:', status);
-      
+
       if (!status.enabled && status.permission !== 'denied') {
         console.log('🔄 Auto-setting up notifications...');
         await setupUserNotifications(currentUser.uid);
@@ -126,7 +126,7 @@ export const NotificationProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser, loading, checkNotificationStatus]);
 
   const requestNotificationPermission = async () => {
     try {
