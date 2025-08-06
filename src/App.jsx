@@ -4,6 +4,7 @@ import { useAuth } from './contexts/AuthContext.jsx'
 import NotificationBell from './components/NotificationBell.jsx'
 import RefreshTokenButton from './components/RefreshTokenButton.jsx'
 import PWAInstallPrompt from './components/PWAInstallPrompt.jsx'
+import FCMDiagnostic from './components/FCMDiagnostic.jsx'
 
 import { 
   searchUsersByUsername, 
@@ -764,6 +765,9 @@ function App() {
           Test Notification
         </button>
       </div>
+
+      {/* FCM Diagnostic Tool */}
+      <FCMDiagnostic />
       
     </div>
   )

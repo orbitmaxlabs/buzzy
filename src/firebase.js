@@ -322,15 +322,12 @@ export const requestNotificationPermission = async () => {
 
 export const getNotificationToken = async () => {
   try {
-<<<<<<< HEAD
-=======
     console.log('🔔 === NOTIFICATION TOKEN DEBUG START ===');
 
     // Ensure messaging is available. The initial initialization can fail in
     // some environments (for example when the module loads before Firebase
     // features are fully supported in the browser). If it's missing, attempt
     // to reinitialize it here so token generation can proceed.
->>>>>>> bad92416dbbe23023374760c77ef15d99250fa51
     if (!messaging) {
       try {
         messaging = getMessaging(app);
@@ -341,49 +338,85 @@ export const getNotificationToken = async () => {
       }
     }
     
+    console.log('✅ Firebase messaging is available');
+    
     if (!('Notification' in window)) {
       throw new Error('Notifications are not supported in this browser');
     }
+    
+    console.log('✅ Notifications are supported');
+    console.log('📱 Current notification permission:', Notification.permission);
     
     if (Notification.permission === 'denied') {
       throw new Error('Notification permission is denied. Please enable notifications in your browser settings.');
     }
     
     if (Notification.permission === 'default') {
+      console.log('🔔 Requesting notification permission...');
       const permission = await Notification.requestPermission();
+      console.log('📱 Permission result:', permission);
       if (permission !== 'granted') {
         throw new Error('Notification permission denied by user');
       }
     }
+    
+    console.log('✅ Notification permission granted');
     
     // Register service worker if needed
     if (!('serviceWorker' in navigator)) {
       throw new Error('Service workers are not supported in this browser');
     }
     
+    console.log('✅ Service workers are supported');
+    
     let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
     if (!registration) {
+      console.log('🔧 Registering Firebase messaging service worker...');
       registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
         scope: '/'
       });
+      console.log('✅ Service worker registered:', registration);
+    } else {
+      console.log('✅ Existing service worker found:', registration);
     }
     
     // Wait for service worker to be ready
+    console.log('⏳ Waiting for service worker to be ready...');
     await navigator.serviceWorker.ready;
+    console.log('✅ Service worker is ready');
     
-    // Get FCM token
+    // Get FCM token with better error handling
+    console.log('🔑 Attempting to get FCM token...');
+    console.log('🔑 Using VAPID key:', 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM');
+    
     const token = await getToken(messaging, {
       vapidKey: 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM',
       serviceWorkerRegistration: registration
     });
     
     if (!token) {
-      throw new Error('Failed to generate FCM token');
+      throw new Error('Failed to generate FCM token - token is null or empty');
     }
     
+    console.log('✅ FCM token generated successfully:', token.substring(0, 20) + '...');
     return token;
   } catch (error) {
-    console.error('Error getting notification token:', error);
+    console.error('❌ Error getting notification token:', error);
+    console.error('❌ Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    
+    // Provide more specific error messages
+    if (error.message.includes('push service error')) {
+      console.error('🔧 This usually means:');
+      console.error('1. VAPID key is incorrect');
+      console.error('2. Firebase project is not properly configured for FCM');
+      console.error('3. Domain is not authorized in Firebase Console');
+      console.error('4. HTTPS is required for FCM to work');
+    }
+    
     throw error;
   }
 };
