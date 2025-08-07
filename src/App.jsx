@@ -218,7 +218,7 @@ function App() {
           <div className="login-header">
             <img src="/android/android-launchericon-512-512.png" alt="Gaand" className="login-logo" />
             <h1 className="login-title">Gaand</h1>
-            <p className="login-subtitle">Connect with Gandus.</p>
+            <p className="login-subtitle">Connect with Gaandus.</p>
           </div>
           <button
             onClick={signInWithGoogle}
@@ -449,7 +449,7 @@ function App() {
           <div className="login-header">
             <img src="/android/android-launchericon-512-512.png" alt="Gaand" className="login-logo" />
             <h1 className="login-title">Gaand</h1>
-            <p className="login-subtitle">Connect with Gandus.</p>
+            <p className="login-subtitle">Connect with Gaandus.</p>
           </div>
           <button
             onClick={signInWithGoogle}

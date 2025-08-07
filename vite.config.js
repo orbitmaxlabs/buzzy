@@ -61,14 +61,14 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//]
       },
       manifest: {
-        name: 'Gaand - Connect with Gandus',
+        name: 'Gaand - Connect with Gaandus',
         short_name: 'Gaand',
         start_url: '/',
         scope: '/',
         display: 'standalone',
         background_color: '#000000',
         theme_color: '#ffffff',
-        description: 'Gaand — Connect with Gandus. Real-time notifications and a slick PWA experience.',
+        description: 'Gaand — Connect with Gaandus. Real-time notifications and a slick PWA experience.',
         orientation: 'portrait-primary',
         categories: ['social', 'communication', 'lifestyle'],
         lang: 'en',
