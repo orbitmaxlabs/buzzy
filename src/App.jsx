@@ -461,13 +461,17 @@ function App() {
     )
   }
 
-  if (!userProfile) {
+  if (authUser && !userProfile) {
     return (
       <div className="login-container">
         <div className="login-card">
           <div className="login-header">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <p className="login-subtitle">Loading your profile...</p>
+            <img src="/android/android-launchericon-512-512.png" alt="Gaand" className="login-logo" />
+            <h1 className="login-title">Gaand</h1>
+            <p className="login-subtitle">Loading profile…</p>
+          </div>
+          <div className="loading-spinner" style={{ margin: '12px auto' }}>
+            <div className="spinner"></div>
           </div>
         </div>
       </div>

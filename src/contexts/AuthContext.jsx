@@ -50,6 +50,10 @@ export function AuthProvider({ children }) {
       setCurrentUser(user)
       if (user) {
         try {
+          // Reveal UI right after sign-in so the app can show a loading screen
+          if (window.__removeSplash) {
+            try { window.__removeSplash() } catch (_) {}
+          }
           // Fetch or create user profile
           let profile = await getUserProfile(user.uid)
           if (!profile) {
@@ -77,7 +81,7 @@ export function AuthProvider({ children }) {
         }
       }
       setLoading(false)
-      // Remove splash when auth state resolved; UI is ready to render a screen
+      // Ensure splash removed once auth state is resolved
       if (window.__removeSplash) {
         try { window.__removeSplash() } catch (_) {}
       }
@@ -96,7 +100,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   )
 }
