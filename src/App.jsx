@@ -18,10 +18,9 @@ import {
   setupUserNotifications,
   getNotificationToken,
   saveNotificationToken,
-  doc,
-  updateDoc,
   db
 } from './firebase.js'
+import { doc, updateDoc } from 'firebase/firestore'
 import {
   sendFriendRequestNotification,
   sendFriendAddedNotification
