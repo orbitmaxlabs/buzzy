@@ -358,14 +358,9 @@ export const getNotificationToken = async () => {
       throw new Error('Service workers not supported');
     }
     console.log('⏳ Waiting for service worker to be ready…');
-    const registration = await navigator.serviceWorker.ready;
-    console.log('✅ Service worker is ready:', registration);
-
+    // Let Firebase use its dedicated messaging SW (firebase-messaging-sw.js)
     console.log('🔑 Generating FCM token…');
-    const token = await getToken(messaging, {
-      vapidKey,
-      serviceWorkerRegistration: registration
-    });
+    const token = await getToken(messaging, { vapidKey });
     if (!token) {
       throw new Error('Failed to generate FCM token (empty)');
     }
@@ -479,9 +474,13 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     
     console.log('📤 Request body:', requestBody);
     
+    const idToken = await auth.currentUser?.getIdToken?.();
     const response = await fetch('https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
+      },
       body: JSON.stringify(requestBody)
     });
 

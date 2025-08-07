@@ -1,4 +1,4 @@
-import { sendNotificationToUser } from '../firebase';
+import { sendNotificationToUser } from '../firebase.js';
 import { getRandomHindiMessage } from './hindiMessages.js';
 
 export const sendWelcomeNotification = async (userId, username) => {

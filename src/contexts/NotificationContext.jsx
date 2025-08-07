@@ -14,7 +14,7 @@ import {
   onForegroundMessage,
   getUserNotifications,
   markNotificationAsRead
-} from '../firebase';
+} from '../firebase.js';
 import { useAuth } from './AuthContext';
 
 const NotificationContext = createContext();
@@ -115,11 +115,13 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (!currentUser) return;
     const unsubscribe = onForegroundMessage(payload => {
+      const title = payload.notification?.title || payload.data?.title;
+      const body = payload.notification?.body || payload.data?.body;
       setNotifications(prev => [
         {
           id: payload.messageId || Date.now().toString(),
-          title: payload.notification?.title,
-          body: payload.notification?.body,
+          title,
+          body,
           createdAt: new Date(),
           read: false,
           ...payload.data

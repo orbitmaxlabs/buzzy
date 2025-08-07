@@ -20,18 +20,20 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase app in the service worker
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps?.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 console.log('[firebase-messaging-sw.js] Firebase initialized');
 
 const messaging = firebase.messaging();
 
-// Handle background messages
+// Handle background messages (data-only payloads supported)
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message', payload);
-  const title = payload.notification?.title || 'Buzzy Notification';
-  const body = payload.notification?.body || '';
-  const icon = payload.notification?.icon || '/android/android-launchericon-192-192.png';
-  const badge = payload.notification?.badge || '/android/android-launchericon-48-48.png';
+  const title = payload.data?.title || payload.notification?.title || 'Buzzy Notification';
+  const body = payload.data?.body || payload.notification?.body || '';
+  const icon = '/android/android-launchericon-192-192.png';
+  const badge = '/android/android-launchericon-48-48.png';
   const data = payload.data || {};
 
   const options = {
@@ -44,25 +46,15 @@ messaging.onBackgroundMessage((payload) => {
     renotify: true,
     vibrate: [200, 100, 200],
     actions: [
-      {
-        action: 'open',
-        title: 'Open App',
-        icon: badge
-      },
-      {
-        action: 'close',
-        title: 'Dismiss',
-        icon: badge
-      }
+      { action: 'open', title: 'Open App', icon: badge },
+      { action: 'close', title: 'Dismiss', icon: badge }
     ],
     timestamp: Date.now(),
     dir: 'auto',
     lang: 'en'
   };
 
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
+  self.registration.showNotification(title, options);
 });
 
 // Notification click handler
@@ -159,32 +151,7 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// Optional: handle raw push events
-self.addEventListener('push', (event) => {
-  console.log('[firebase-messaging-sw.js] Push event', event);
-  if (event.data) {
-    let data = {};
-    try {
-      data = event.data.json();
-    } catch (err) {
-      console.error('[firebase-messaging-sw.js] Push data JSON parse error', err);
-    }
-
-    const title = data.title || 'Buzzy Notification';
-    const options = {
-      body: data.body || '',
-      icon: data.icon || '/android/android-launchericon-192-192.png',
-      badge: data.badge || '/android/android-launchericon-48-48.png',
-      data: data.data || {},
-      requireInteraction: true,
-      tag: 'buzzy-push-notification',
-      renotify: true,
-      vibrate: [200, 100, 200]
-    };
-
-    event.waitUntil(self.registration.showNotification(title, options));
-  }
-});
+// Remove raw push handler to avoid duplication; onBackgroundMessage is sufficient
 
 // Support skip waiting from client
 self.addEventListener('message', (event) => {

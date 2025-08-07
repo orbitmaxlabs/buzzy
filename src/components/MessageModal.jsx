@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { sendMessage } from '../firebase';
+import { sendMessage } from '../firebase.js';
 import { sendMessageNotification } from '../utils/notificationUtils';
 import { useAuth } from '../contexts/AuthContext';
 
