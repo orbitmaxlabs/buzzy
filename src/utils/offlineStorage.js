@@ -1,7 +1,7 @@
 // src/utils/offlineStorage.js
 
 // IndexedDB database name and version
-const DB_NAME = 'BuzzyOfflineDB';
+const DB_NAME = 'GaandOfflineDB';
 const DB_VERSION = 1;
 
 // Store names

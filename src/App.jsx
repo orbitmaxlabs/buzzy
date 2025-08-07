@@ -376,9 +376,9 @@ function App() {
       <div className="login-container">
         <div className="login-card">
           <div className="login-header">
-            <img src="/android/android-launchericon-512-512.png" alt="Buzzy" className="login-logo" />
-            <h1 className="login-title">Buzzy</h1>
-            <p className="login-subtitle">Connect with friends and stay in touch!</p>
+            <img src="/android/android-launchericon-512-512.png" alt="Gaand" className="login-logo" />
+            <h1 className="login-title">Gaand</h1>
+            <p className="login-subtitle">Connect with Gaandus.</p>
           </div>
           <button
             onClick={signInWithGoogle}
@@ -417,8 +417,8 @@ function App() {
       <header className="top-bar">
         <div className="top-bar-left">
           <div className="logo">
-            <img src="/android/android-launchericon-192-192.png" alt="Buzzy" className="logo-icon" />
-            <span className="logo-text">Buzzy</span>
+            <img src="/android/android-launchericon-192-192.png" alt="Gaand" className="logo-icon" />
+            <span className="logo-text">Gaand</span>
           </div>
         </div>
         <div className="top-bar-right">

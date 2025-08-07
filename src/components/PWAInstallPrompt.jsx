@@ -80,7 +80,7 @@ const PWAInstallPrompt = () => {
           </svg>
         </div>
         <div className="pwa-install-text">
-          <h3>Install Buzzy</h3>
+          <h3>Install Gaand</h3>
           <p>Get the full app experience with notifications and offline access!</p>
         </div>
         <div className="pwa-install-actions">

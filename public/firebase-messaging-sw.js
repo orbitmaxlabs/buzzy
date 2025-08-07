@@ -28,8 +28,16 @@ const messaging = firebase.messaging();
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message', payload);
-  const title = payload.notification?.title || 'Buzzy Notification';
-  const body = payload.notification?.body || '';
+  
+  // Only show notification if we have proper title and body
+  const title = payload.notification?.title;
+  const body = payload.notification?.body;
+  
+  if (!title || !body) {
+    console.log('[firebase-messaging-sw.js] Skipping notification - missing title or body');
+    return;
+  }
+  
   const icon = payload.notification?.icon || '/android/android-launchericon-192-192.png';
   const badge = payload.notification?.badge || '/android/android-launchericon-48-48.png';
   const data = payload.data || {};
@@ -40,7 +48,7 @@ messaging.onBackgroundMessage((payload) => {
     badge,
     data,
     requireInteraction: true,
-    tag: 'buzzy-notification',
+    tag: 'gaand-notification',
     renotify: true,
     vibrate: [200, 100, 200],
     actions: [
@@ -103,7 +111,7 @@ self.addEventListener('activate', (event) => {
       caches.keys().then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== 'buzzy-cache-v1' && key !== 'buzzy-offline-v1')
+            .filter((key) => key !== 'gaand-cache-v1' && key !== 'gaand-offline-v1')
             .map((key) => caches.delete(key))
         )
       )
@@ -132,7 +140,7 @@ self.addEventListener('fetch', (event) => {
       event.request.destination === 'image') {
     
     event.respondWith(
-      caches.open('buzzy-offline-v1').then((cache) => {
+      caches.open('gaand-offline-v1').then((cache) => {
         return cache.match(event.request).then((response) => {
           if (response) {
             // Return cached version
@@ -170,14 +178,22 @@ self.addEventListener('push', (event) => {
       console.error('[firebase-messaging-sw.js] Push data JSON parse error', err);
     }
 
-    const title = data.title || 'Buzzy Notification';
+    // Only show notification if we have proper title and body
+    const title = data.title;
+    const body = data.body;
+    
+    if (!title || !body) {
+      console.log('[firebase-messaging-sw.js] Skipping push notification - missing title or body');
+      return;
+    }
+
     const options = {
-      body: data.body || '',
+      body: body,
       icon: data.icon || '/android/android-launchericon-192-192.png',
       badge: data.badge || '/android/android-launchericon-48-48.png',
       data: data.data || {},
       requireInteraction: true,
-      tag: 'buzzy-push-notification',
+      tag: 'gaand-push-notification',
       renotify: true,
       vibrate: [200, 100, 200]
     };

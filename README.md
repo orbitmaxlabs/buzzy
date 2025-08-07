@@ -1,4 +1,4 @@
-# Buzzy - Social Friend Management App
+# Gaand - Social Friend Management App
 
 A modern, responsive web application for managing friends and social connections, built with React, Vite, and Firebase.
 
@@ -38,8 +38,8 @@ A modern, responsive web application for managing friends and social connections
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/orbitmaxlabs/buzzy.git
-cd buzzy
+git clone https://github.com/orbitmaxlabs/gaand.git
+cd gaand
 ```
 
 2. Install dependencies:
