@@ -15,22 +15,16 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>
 );
 
-// Robust splash removal: handle load, DOM ready, and post-render fallbacks
+// Robust splash removal controlled by app readiness
 function removeSplash() {
   const splash = document.getElementById('splash');
   if (splash && splash.parentNode) {
     splash.parentNode.removeChild(splash);
   }
 }
-
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  // DOM is ready; remove quickly after a short tick to allow first paint
-  setTimeout(removeSplash, 100);
-} else {
-  window.addEventListener('DOMContentLoaded', () => setTimeout(removeSplash, 100));
-  window.addEventListener('load', () => setTimeout(removeSplash, 100));
-}
-
-// Extra safety: remove after mount regardless (covers PWA resume/edge cases)
-requestAnimationFrame(() => requestAnimationFrame(removeSplash));
-setTimeout(removeSplash, 2000);
+// Expose a controlled remover so the React app can dismiss the splash when ready
+// Keep a long safety timeout to avoid permanent stuck screens in extreme cases
+window.__removeSplash = removeSplash;
+setTimeout(() => {
+  try { removeSplash(); } catch (_) {}
+}, 10000);

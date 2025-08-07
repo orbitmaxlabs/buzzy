@@ -71,8 +71,16 @@ export function AuthProvider({ children }) {
         }
       } else {
         setUserProfile(null)
+        // If unauthenticated, ensure splash is removed (login screen will render)
+        if (window.__removeSplash) {
+          try { window.__removeSplash() } catch (_) {}
+        }
       }
       setLoading(false)
+      // Remove splash when auth state resolved; UI is ready to render a screen
+      if (window.__removeSplash) {
+        try { window.__removeSplash() } catch (_) {}
+      }
     })
 
     return unsubscribe

@@ -162,8 +162,13 @@ function App() {
     if (authUser && userProfile) {
       migrateUserData(authUser.uid)
       cleanupDuplicateFriends(authUser.uid)
-      loadFriends()
-      loadFriendRequests()
+      ;(async () => {
+        await Promise.all([loadFriends(), loadFriendRequests()])
+        // Once first data paint complete, remove splash
+        if (window.__removeSplash) {
+          try { window.__removeSplash() } catch (_) {}
+        }
+      })()
       
       // Automatically setup notifications
       setupNotificationsAutomatically()
