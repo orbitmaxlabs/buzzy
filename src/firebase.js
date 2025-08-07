@@ -5,8 +5,17 @@ import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, o
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // Load Firebase configuration from a single shared file
-const firebaseConfig = await fetch('/firebase-config.json').then(res => res.json());
-const vapidKey = 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM';
+const configFile = await fetch('/firebase-config.json').then(res => res.json());
+const firebaseConfig = {
+  apiKey: configFile.apiKey,
+  authDomain: configFile.authDomain,
+  projectId: configFile.projectId,
+  storageBucket: configFile.storageBucket,
+  messagingSenderId: configFile.messagingSenderId,
+  appId: configFile.appId
+};
+const vapidKey = configFile.vapidKey;
+const functionsUrl = configFile.functionsUrl || 'https://us-central1-buzzy-d2b2a.cloudfunctions.net';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -475,7 +484,7 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     console.log('📤 Request body:', requestBody);
     
     const idToken = await auth.currentUser?.getIdToken?.();
-    const response = await fetch('https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification', {
+    const response = await fetch(`${functionsUrl}/sendNotification`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
