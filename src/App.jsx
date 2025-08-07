@@ -17,11 +17,14 @@ import {
   checkUserNotificationStatus,
   setupUserNotifications,
   getNotificationToken,
-  saveNotificationToken
+  saveNotificationToken,
+  validateAndSetupNotifications,
+  ensureFriendNotifications
 } from './firebase.js'
 import {
   sendFriendRequestNotification,
-  sendFriendAddedNotification
+  sendFriendAddedNotification,
+  sendGreetingNotification
 } from './utils/notificationUtils.js'
 import { initializePWA } from './utils/pwaUtils.js'
 import offlineFirebase from './utils/offlineFirebase.js'
@@ -133,8 +136,10 @@ function App() {
       loadFriends()
       loadFriendRequests()
       
-      // Automatically setup notifications
-      setupNotificationsAutomatically()
+      // Automatically validate and setup notifications
+      validateAndSetupNotifications(authUser.uid).catch(error => {
+        console.error('Error validating notifications:', error)
+      })
       
       // Show notification prompt for iOS devices if permission is default
       if (Notification.permission === 'default') {
@@ -231,30 +236,13 @@ function App() {
     }))
 
     try {
-      const randomMessage = getRandomHindiMessage()
-      const result = await offlineFirebase.sendNotificationToUser(friend.uid, {
-        title: userProfile.username,
-        body: randomMessage,
-        data: { type: 'greeting', fromUid: authUser.uid, fromUsername: userProfile.username }
-      })
+      console.log(`🎉 Sending greeting to ${friend.username} (${friend.uid})`)
       
-      if (result && result.offline) {
-        console.log(`📝 Greeting queued for offline sync to ${friend.username}`)
-        // Show success state for offline queuing
-        setFriendCardStates(prev => ({
-          ...prev,
-          [friend.uid]: { state: 'success' }
-        }))
-        
-        // Show popup for offline queuing
-        setPopupMessage({
-          type: 'success',
-          title: 'Greeting Queued',
-          body: `Greeting sent to ${friend.username} (will be delivered when online): ${randomMessage}`
-        })
-        setShowPopup(true)
-      } else if (result && result.success) {
-        console.log(`✅ Notification sent to ${friend.username}`)
+      // Use the enhanced greeting notification function
+      const result = await sendGreetingNotification(userProfile, friend.uid)
+      
+      if (result.success) {
+        console.log(`✅ Greeting sent successfully to ${friend.username}`)
         // Show success state
         setFriendCardStates(prev => ({
           ...prev,
@@ -265,27 +253,34 @@ function App() {
         setPopupMessage({
           type: 'success',
           title: 'Greeting Sent!',
-          body: `Greeting sent to ${friend.username}: ${randomMessage}`
+          body: `Greeting sent to ${friend.username}: ${result.message}`
         })
         setShowPopup(true)
       } else {
-        console.log(`❌ Notification failed: ${result.message}`)
+        console.log(`❌ Greeting failed: ${result.message}`)
         // Show error state
         setFriendCardStates(prev => ({
           ...prev,
           [friend.uid]: { state: 'error' }
         }))
         
-        // Show error popup
+        // Show error popup with specific reason
+        let errorMessage = result.message || 'Unknown error'
+        if (result.reason === 'no_token') {
+          errorMessage = `${friend.username} hasn't enabled notifications yet`
+        } else if (result.reason === 'notifications_disabled') {
+          errorMessage = `${friend.username} has notifications disabled`
+        }
+        
         setPopupMessage({
           type: 'error',
           title: 'Failed to Send',
-          body: `Failed to send greeting to ${friend.username}: ${result.message || 'Unknown error'}`
+          body: `Failed to send greeting to ${friend.username}: ${errorMessage}`
         })
         setShowPopup(true)
       }
     } catch (error) {
-      console.error('Error sending notification:', error)
+      console.error('Error sending greeting:', error)
       // Show error state
       setFriendCardStates(prev => ({
         ...prev,

@@ -770,3 +770,100 @@ export const refreshNotificationToken = async (uid) => {
     throw error;
   }
 };
+
+// Comprehensive notification validation and setup
+export const validateAndSetupNotifications = async (uid) => {
+  try {
+    console.log('🔍 === VALIDATING NOTIFICATION SETUP ===');
+    console.log('👤 Validating for user:', uid);
+    
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+    
+    if (!userSnap.exists()) {
+      console.error('❌ User not found');
+      throw new Error('User not found');
+    }
+    
+    const userData = userSnap.data();
+    console.log('📊 Current user notification data:', {
+      hasToken: !!userData.notificationToken,
+      tokenLength: userData.notificationToken?.length || 0,
+      notificationEnabled: userData.notificationEnabled,
+      permission: userData.notificationPermission,
+      lastUpdate: userData.lastTokenUpdate
+    });
+    
+    // Check if user needs notification setup
+    const needsSetup = !userData.notificationToken || 
+                      !userData.notificationEnabled || 
+                      userData.notificationPermission !== 'granted';
+    
+    if (needsSetup) {
+      console.log('🔧 User needs notification setup, running setup...');
+      return await setupUserNotifications(uid);
+    }
+    
+    // Check if token is recent (less than 30 days old)
+    const tokenAge = userData.lastTokenUpdate ? 
+      (new Date() - userData.lastTokenUpdate.toDate()) / (1000 * 60 * 60 * 24) : 
+      Infinity;
+    
+    if (tokenAge > 30) {
+      console.log('🔄 Token is old, refreshing...');
+      return await refreshNotificationToken(uid);
+    }
+    
+    console.log('✅ User notification setup is valid');
+    return {
+      success: true,
+      token: userData.notificationToken,
+      permission: userData.notificationPermission,
+      enabled: userData.notificationEnabled
+    };
+    
+  } catch (error) {
+    console.error('❌ Error validating notification setup:', error);
+    throw error;
+  }
+};
+
+// Enhanced function to ensure notifications work for all friends
+export const ensureFriendNotifications = async (friendUid) => {
+  try {
+    console.log('🔍 === ENSURING FRIEND NOTIFICATIONS ===');
+    console.log('👤 Checking friend:', friendUid);
+    
+    const friendRef = doc(db, 'users', friendUid);
+    const friendSnap = await getDoc(friendRef);
+    
+    if (!friendSnap.exists()) {
+      console.log('❌ Friend not found');
+      return { success: false, reason: 'friend_not_found' };
+    }
+    
+    const friendData = friendSnap.data();
+    console.log('📊 Friend notification status:', {
+      hasToken: !!friendData.notificationToken,
+      notificationEnabled: friendData.notificationEnabled,
+      permission: friendData.notificationPermission
+    });
+    
+    if (!friendData.notificationToken) {
+      console.log('⚠️ Friend has no notification token');
+      return { success: false, reason: 'no_token' };
+    }
+    
+    if (!friendData.notificationEnabled) {
+      console.log('⚠️ Friend has notifications disabled');
+      return { success: false, reason: 'notifications_disabled' };
+    }
+    
+    console.log('✅ Friend is ready for notifications');
+    return { success: true };
+    
+  } catch (error) {
+    console.error('❌ Error checking friend notifications:', error);
+    return { success: false, reason: 'error' };
+  }
+};

@@ -28,17 +28,27 @@ const messaging = firebase.messaging();
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message', payload);
-  const title = payload.notification?.title || 'Buzzy Notification';
-  const body = payload.notification?.body || '';
-  const icon = payload.notification?.icon || '/android/android-launchericon-192-192.png';
-  const badge = payload.notification?.badge || '/android/android-launchericon-48-48.png';
+  
+  // Extract notification data with proper fallbacks
+  const notification = payload.notification || {};
   const data = payload.data || {};
+  
+  // Use data fields as fallback for title and body if notification object is missing
+  const title = notification.title || data.title || 'Buzzy Notification';
+  const body = notification.body || data.body || '';
+  const icon = notification.icon || data.icon || '/android/android-launchericon-192-192.png';
+  const badge = notification.badge || data.badge || '/android/android-launchericon-48-48.png';
+
+  console.log('[firebase-messaging-sw.js] Showing notification:', { title, body, icon, badge });
 
   const options = {
     body,
     icon,
     badge,
-    data,
+    data: {
+      ...data,
+      click_action: 'FLUTTER_NOTIFICATION_CLICK'
+    },
     requireInteraction: true,
     tag: 'buzzy-notification',
     renotify: true,
@@ -57,12 +67,12 @@ messaging.onBackgroundMessage((payload) => {
     ],
     timestamp: Date.now(),
     dir: 'auto',
-    lang: 'en'
+    lang: 'en',
+    silent: false
   };
 
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
+  // Show the notification
+  return self.registration.showNotification(title, options);
 });
 
 // Notification click handler
@@ -159,7 +169,7 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-// Optional: handle raw push events
+// Handle raw push events (fallback for older browsers)
 self.addEventListener('push', (event) => {
   console.log('[firebase-messaging-sw.js] Push event', event);
   if (event.data) {
@@ -168,20 +178,33 @@ self.addEventListener('push', (event) => {
       data = event.data.json();
     } catch (err) {
       console.error('[firebase-messaging-sw.js] Push data JSON parse error', err);
+      // Try to parse as text
+      try {
+        data = { body: event.data.text() };
+      } catch (textErr) {
+        console.error('[firebase-messaging-sw.js] Push data text parse error', textErr);
+        data = { body: 'New notification' };
+      }
     }
 
-    const title = data.title || 'Buzzy Notification';
+    const title = data.title || data.notification?.title || 'Buzzy Notification';
+    const body = data.body || data.notification?.body || data.message || '';
+    const icon = data.icon || data.notification?.icon || '/android/android-launchericon-192-192.png';
+    const badge = data.badge || data.notification?.badge || '/android/android-launchericon-48-48.png';
+
     const options = {
-      body: data.body || '',
-      icon: data.icon || '/android/android-launchericon-192-192.png',
-      badge: data.badge || '/android/android-launchericon-48-48.png',
+      body,
+      icon,
+      badge,
       data: data.data || {},
       requireInteraction: true,
       tag: 'buzzy-push-notification',
       renotify: true,
-      vibrate: [200, 100, 200]
+      vibrate: [200, 100, 200],
+      silent: false
     };
 
+    console.log('[firebase-messaging-sw.js] Showing push notification:', { title, body });
     event.waitUntil(self.registration.showNotification(title, options));
   }
 });
