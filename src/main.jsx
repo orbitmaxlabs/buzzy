@@ -15,11 +15,22 @@ createRoot(document.getElementById('root')).render(
   </StrictMode>
 );
 
-// Remove splash once app is mounted and first paint is likely done
-window.addEventListener('load', () => {
+// Robust splash removal: handle load, DOM ready, and post-render fallbacks
+function removeSplash() {
   const splash = document.getElementById('splash');
-  if (splash) {
-    // small delay to avoid flash
-    setTimeout(() => splash.remove(), 150);
+  if (splash && splash.parentNode) {
+    splash.parentNode.removeChild(splash);
   }
-});
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  // DOM is ready; remove quickly after a short tick to allow first paint
+  setTimeout(removeSplash, 100);
+} else {
+  window.addEventListener('DOMContentLoaded', () => setTimeout(removeSplash, 100));
+  window.addEventListener('load', () => setTimeout(removeSplash, 100));
+}
+
+// Extra safety: remove after mount regardless (covers PWA resume/edge cases)
+requestAnimationFrame(() => requestAnimationFrame(removeSplash));
+setTimeout(removeSplash, 2000);
