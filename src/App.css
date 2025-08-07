@@ -104,6 +104,17 @@
   }
 }
 
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 @media (max-width: 768px) {
   .pwa-install-prompt {
     top: 80px;
@@ -463,9 +474,7 @@ body {
   border: 2px solid #333333;
 }
 
-.edit-name-btn {
-  background: linear-gradient(45deg, #667eea, #764ba2);
-}
+
 
 .edit-avatar-btn:hover,
 .edit-name-btn:hover {
@@ -654,11 +663,7 @@ body {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
+
 
 .cancel-btn {
   background: linear-gradient(45deg, #6b7280, #4b5563);
@@ -782,25 +787,9 @@ body {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
-.edit-form {
-  background-color: #2a2a2a;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #444444;
-  margin-top: 12px;
-}
 
-.form-group {
-  margin-bottom: 16px;
-}
 
-.form-group label {
-  display: block;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
+
 
 .edit-input {
   width: 100%;
@@ -844,19 +833,7 @@ body {
   box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
 }
 
-.profile-username {
-  font-size: 16px;
-  color: #a0a0a0;
-  margin: 0;
-  font-weight: 500;
-}
 
-.friend-username {
-  font-size: 12px;
-  color: #a0a0a0;
-  margin: 0;
-  font-weight: 500;
-}
 
 .friends-list {
   display: flex;
@@ -967,8 +944,6 @@ body {
 
 
 /* Animations */
-
-
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -977,8 +952,6 @@ body {
     transform: rotate(360deg);
   }
 }
-
-
 
 @media (max-width: 768px) {
   .top-bar {
@@ -1248,9 +1221,7 @@ body {
     margin-bottom: 20px;
   }
 
-  .modal-actions {
-    gap: 10px;
-  }
+
 
   .cancel-btn,
   .search-btn {
@@ -1400,9 +1371,7 @@ body {
     margin-bottom: 16px;
   }
 
-  .modal-actions {
-    gap: 8px;
-  }
+
 
   .cancel-btn,
   .search-btn {
@@ -1501,12 +1470,7 @@ body {
   .logout-btn,
   .add-friends-btn,
   .profile-friend-item,
-  .remove-friend-btn,
-  .message-popup-overlay,
-  .message-popup,
-  .popup-close-btn,
-  .popup-ok-btn,
-  .success-icon {
+  .remove-friend-btn {
     transition: none;
   }
   
@@ -1522,8 +1486,7 @@ body {
   .edit-name-btn:hover,
   .logout-btn:hover,
   .add-friends-btn:hover,
-  .remove-friend-btn:hover,
-  .popup-ok-btn:hover {
+  .remove-friend-btn:hover {
     transform: none;
   }
 
@@ -1886,15 +1849,6 @@ body {
 /* Loading spinner animation */
 .animate-spin {
   animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 
