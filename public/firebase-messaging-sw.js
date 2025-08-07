@@ -29,9 +29,9 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message', payload);
   
-  // Only show notification if we have proper title and body
-  const title = payload.notification?.title;
-  const body = payload.notification?.body;
+  // Try to get title and body from different possible locations
+  let title = payload.notification?.title || payload.data?.title;
+  let body = payload.notification?.body || payload.data?.body;
   
   if (!title || !body) {
     console.log('[firebase-messaging-sw.js] Skipping notification - missing title or body');
@@ -178,9 +178,9 @@ self.addEventListener('push', (event) => {
       console.error('[firebase-messaging-sw.js] Push data JSON parse error', err);
     }
 
-    // Only show notification if we have proper title and body
-    const title = data.title;
-    const body = data.body;
+    // Try to get title and body from different possible locations
+    let title = data.title || data.notification?.title;
+    let body = data.body || data.notification?.body;
     
     if (!title || !body) {
       console.log('[firebase-messaging-sw.js] Skipping push notification - missing title or body');

@@ -17,7 +17,10 @@ import {
   checkUserNotificationStatus,
   setupUserNotifications,
   getNotificationToken,
-  saveNotificationToken
+  saveNotificationToken,
+  doc,
+  updateDoc,
+  db
 } from './firebase.js'
 import {
   sendFriendRequestNotification,
@@ -63,11 +66,7 @@ function App() {
     try {
       console.log('🔔 Starting automatic notification setup...')
       
-      // Check current notification status
-      const status = await checkUserNotificationStatus(authUser.uid)
-      console.log('📊 Current notification status:', status)
-      
-      // Check if we need to request permission
+      // Always request permission if not granted
       if (Notification.permission === 'default') {
         console.log('🔔 Requesting notification permission...')
         const permission = await Notification.requestPermission()
@@ -77,17 +76,25 @@ function App() {
         }
       }
       
-      // Check if we need to generate/update token
+      // Always generate and save fresh token if permission is granted
       if (Notification.permission === 'granted') {
         try {
+          console.log('🔄 Generating fresh FCM token...')
           const currentToken = await getNotificationToken()
           
-          // Check if token has changed or doesn't exist in DB
-          if (!status.hasToken || status.lastUpdate) {
-            console.log('🔄 Token needs to be updated, saving to database...')
-            await saveNotificationToken(authUser.uid, currentToken)
-            console.log('✅ Token saved successfully')
-          }
+          console.log('💾 Saving token to database...')
+          await saveNotificationToken(authUser.uid, currentToken)
+          
+          // Update user profile to enable notifications
+          const userRef = doc(db, 'users', authUser.uid)
+          await updateDoc(userRef, {
+            notificationPermission: 'granted',
+            notificationEnabled: true,
+            lastTokenUpdate: new Date(),
+            lastActive: new Date()
+          })
+          
+          console.log('✅ Notification setup completed successfully')
         } catch (tokenError) {
           console.error('❌ Error generating/saving token:', tokenError)
         }

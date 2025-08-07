@@ -425,15 +425,11 @@ export const removeNotificationToken = async (uid) => {
 
 export const sendNotificationToUser = async (targetUid, notification) => {
   try {
-    console.log('📱 === SENDING NOTIFICATION ===');
-    console.log('👤 Target user:', targetUid);
-    console.log('📝 Notification:', notification);
-    
+    // Check if user exists
     const userRef = doc(db, 'users', targetUid);
     const userSnap = await getDoc(userRef);
     
     if (!userSnap.exists()) {
-      console.log('❌ User not found');
       return { 
         success: false, 
         message: 'User not found',
@@ -442,26 +438,9 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     }
 
     const userData = userSnap.data();
-    const token = userData.notificationToken;
     
-    console.log('🔍 User notification data:', {
-      hasToken: !!token,
-      tokenLength: token?.length || 0,
-      notificationEnabled: userData.notificationEnabled,
-      permission: userData.notificationPermission
-    });
-    
-    if (!token) {
-      console.log('❌ User has no notification token');
-      return { 
-        success: false, 
-        message: 'User has no notification token',
-        reason: 'no_token'
-      };
-    }
-    
+    // Check notification settings
     if (!userData.notificationEnabled) {
-      console.log('❌ User has notifications disabled');
       return { 
         success: false, 
         message: 'User has notifications disabled',
@@ -469,7 +448,27 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       };
     }
     
-    console.log('📤 Sending notification via Firebase Functions...');
+    // Check if user has a notification token
+    const tokenRef = doc(db, 'notificationTokens', targetUid);
+    const tokenSnap = await getDoc(tokenRef);
+    
+    if (!tokenSnap.exists) {
+      return { 
+        success: false, 
+        message: 'User has no notification token',
+        reason: 'no_token'
+      };
+    }
+    
+    const tokenData = tokenSnap.data();
+    if (!tokenData.token) {
+      return { 
+        success: false, 
+        message: 'User has empty notification token',
+        reason: 'empty_token'
+      };
+    }
+    
     const requestBody = {
       targetUid,
       title: notification.title,
@@ -477,20 +476,14 @@ export const sendNotificationToUser = async (targetUid, notification) => {
       data: notification.data || {}
     };
     
-    console.log('📤 Request body:', requestBody);
-    
     const response = await fetch('https://us-central1-buzzy-d2b2a.cloudfunctions.net/sendNotification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
-    console.log('📥 Response status:', response.status);
-    console.log('📥 Response ok:', response.ok);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Function error:', errorText);
       return { 
         success: false, 
         message: `Failed to send notification: ${response.status} ${errorText}`,
@@ -499,10 +492,8 @@ export const sendNotificationToUser = async (targetUid, notification) => {
     }
 
     const result = await response.json();
-    console.log('✅ Notification sent successfully:', result);
     return { ...result, success: true };
   } catch (error) {
-    console.error('❌ Error sending notification:', error);
     return { 
       success: false, 
       message: `Error sending notification: ${error.message}`,
