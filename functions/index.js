@@ -25,6 +25,10 @@ const cors = require('cors')({ origin: true });
 exports.sendNotification = onRequest({ maxInstances: 10 }, async (req, res) => {
   return cors(req, res, async () => {
     try {
+      if (req.method === 'OPTIONS') {
+        // CORS preflight
+        return res.status(204).send('');
+      }
       if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
       }
@@ -122,6 +126,10 @@ exports.sendNotification = onRequest({ maxInstances: 10 }, async (req, res) => {
 exports.sendNotificationToMultiple = onRequest({ maxInstances: 10 }, async (req, res) => {
   return cors(req, res, async () => {
     try {
+      if (req.method === 'OPTIONS') {
+        // CORS preflight
+        return res.status(204).send('');
+      }
       if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
       }
