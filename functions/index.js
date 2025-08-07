@@ -151,7 +151,7 @@ exports.health = onRequest({ maxInstances: 5 }, (req, res) => {
     res.json({ 
       status: 'OK', 
       timestamp: new Date().toISOString(),
-      service: 'Gaand Notification Functions'
+      service: 'Buzzy Notification Functions'
     });
   });
 });

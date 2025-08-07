@@ -4,7 +4,7 @@ import { getRandomHindiMessage } from './hindiMessages.js';
 export const sendWelcomeNotification = async (userId, username) => {
   try {
     const notification = {
-      title: 'Welcome to Gaand!',
+      title: 'Welcome to Buzzy!',
       body: `Welcome ${username}! We're excited to have you on board.`,
       data: { type: 'welcome', userId, username }
     };

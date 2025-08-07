@@ -17,10 +17,8 @@ import {
   checkUserNotificationStatus,
   setupUserNotifications,
   getNotificationToken,
-  saveNotificationToken,
-  db
+  saveNotificationToken
 } from './firebase.js'
-import { doc, updateDoc } from 'firebase/firestore'
 import {
   sendFriendRequestNotification,
   sendFriendAddedNotification
@@ -65,7 +63,11 @@ function App() {
     try {
       console.log('🔔 Starting automatic notification setup...')
       
-      // Always request permission if not granted
+      // Check current notification status
+      const status = await checkUserNotificationStatus(authUser.uid)
+      console.log('📊 Current notification status:', status)
+      
+      // Check if we need to request permission
       if (Notification.permission === 'default') {
         console.log('🔔 Requesting notification permission...')
         const permission = await Notification.requestPermission()
@@ -75,25 +77,17 @@ function App() {
         }
       }
       
-      // Always generate and save fresh token if permission is granted
+      // Check if we need to generate/update token
       if (Notification.permission === 'granted') {
         try {
-          console.log('🔄 Generating fresh FCM token...')
           const currentToken = await getNotificationToken()
           
-          console.log('💾 Saving token to database...')
-          await saveNotificationToken(authUser.uid, currentToken)
-          
-          // Update user profile to enable notifications
-          const userRef = doc(db, 'users', authUser.uid)
-          await updateDoc(userRef, {
-            notificationPermission: 'granted',
-            notificationEnabled: true,
-            lastTokenUpdate: new Date(),
-            lastActive: new Date()
-          })
-          
-          console.log('✅ Notification setup completed successfully')
+          // Check if token has changed or doesn't exist in DB
+          if (!status.hasToken || status.lastUpdate) {
+            console.log('🔄 Token needs to be updated, saving to database...')
+            await saveNotificationToken(authUser.uid, currentToken)
+            console.log('✅ Token saved successfully')
+          }
         } catch (tokenError) {
           console.error('❌ Error generating/saving token:', tokenError)
         }
@@ -382,9 +376,9 @@ function App() {
       <div className="login-container">
         <div className="login-card">
           <div className="login-header">
-            <img src="/android/android-launchericon-512-512.png" alt="Gaand" className="login-logo" />
-            <h1 className="login-title">Gaand</h1>
-            <p className="login-subtitle">Connect with Gaandus.</p>
+            <img src="/android/android-launchericon-512-512.png" alt="Buzzy" className="login-logo" />
+            <h1 className="login-title">Buzzy</h1>
+            <p className="login-subtitle">Connect with friends and stay in touch!</p>
           </div>
           <button
             onClick={signInWithGoogle}
@@ -423,8 +417,8 @@ function App() {
       <header className="top-bar">
         <div className="top-bar-left">
           <div className="logo">
-            <img src="/android/android-launchericon-192-192.png" alt="Gaand" className="logo-icon" />
-            <span className="logo-text">Gaand</span>
+            <img src="/android/android-launchericon-192-192.png" alt="Buzzy" className="logo-icon" />
+            <span className="logo-text">Buzzy</span>
           </div>
         </div>
         <div className="top-bar-right">

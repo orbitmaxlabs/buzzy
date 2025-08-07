@@ -61,14 +61,14 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//]
       },
       manifest: {
-        name: 'Gaand - Connect with Gaandus',
-        short_name: 'Gaand',
+        name: 'Buzzy - Connect with Friends',
+        short_name: 'Buzzy',
         start_url: '/',
         scope: '/',
         display: 'standalone',
         background_color: '#000000',
         theme_color: '#ffffff',
-        description: 'Gaand is your go-to app for connecting with friends and staying in the loop with real-time notifications.',
+        description: 'Buzzy is your go-to app for connecting with friends and staying in the loop with real-time notifications.',
         orientation: 'portrait-primary',
         categories: ['social', 'communication', 'lifestyle'],
         lang: 'en',

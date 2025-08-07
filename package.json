@@ -1,11 +1,11 @@
 {
-  "name": "gaand",
+  "name": "buzzy",
   "private": true,
   "version": "0.0.0",
   "homepage": "https://www.adrit.gay",
   "repository": {
     "type": "git",
-    "url": "https://github.com/orbitmaxlabs/gaand.git"
+    "url": "https://github.com/orbitmaxlabs/buzzy.git"
   },
   "type": "module",
   "scripts": {
