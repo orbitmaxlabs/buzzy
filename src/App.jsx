@@ -31,7 +31,9 @@ import OfflineBanner from './components/OfflineBanner.jsx'
 import { getRandomHindiMessage } from './utils/hindiMessages.js'
 
 function App() {
-  const { currentUser: authUser, userProfile, signInWithGoogle, logout: authLogout, updateProfile } = useAuth()
+  const { currentUser: authUser, userProfile, signInWithGoogle, logout: authLogout, updateProfile, loading: authLoading } = useAuth()
+
+
 
   // State for friend card interactions
   const [friendCardStates, setFriendCardStates] = useState({})
@@ -133,6 +135,16 @@ function App() {
   const [showProfile, setShowProfile] = useState(false)
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false)
 
+  // This useEffect must be before any early returns to follow Rules of Hooks
+  useEffect(() => {
+    if (userProfile) {
+      setEditForm({
+        username: userProfile.username || '',
+        photoURL: userProfile.photoURL || '👤'
+      })
+    }
+  }, [userProfile])
+
   useEffect(() => {
     initializePWA().catch(error => console.error('PWA initialization error:', error))
     
@@ -141,34 +153,20 @@ function App() {
       try {
         await offlineFirebase.initialize()
         console.log('✅ Offline storage initialized')
-        // Warm caches: if user is known, pull cached friends and requests ASAP
-        if (authUser) {
-          const [cachedFriends, cachedRequests] = await Promise.all([
-            offlineStorage.getCachedFriends(authUser.uid),
-            offlineStorage.getCachedFriendRequests(authUser.uid)
-          ])
-          if (Array.isArray(cachedFriends)) setFriends(cachedFriends)
-          if (Array.isArray(cachedRequests)) setFriendRequests(cachedRequests)
-        }
       } catch (error) {
         console.error('❌ Failed to initialize offline storage:', error)
       }
     }
     
     initOfflineStorage()
-  }, [authUser])
+  }, [])
 
   useEffect(() => {
     if (authUser && userProfile) {
       migrateUserData(authUser.uid)
       cleanupDuplicateFriends(authUser.uid)
-      ;(async () => {
-        await Promise.all([loadFriends(), loadFriendRequests()])
-        // Once first data paint complete, remove splash
-        if (window.__removeSplash) {
-          try { window.__removeSplash() } catch (_) {}
-        }
-      })()
+      loadFriends()
+      loadFriendRequests()
       
       // Automatically setup notifications
       setupNotificationsAutomatically()
@@ -183,6 +181,34 @@ function App() {
       }
     }
   }, [authUser, userProfile, loadFriends, loadFriendRequests, setupNotificationsAutomatically])
+
+  // Auto-hide popup after 4 seconds
+  useEffect(() => {
+    if (showPopup) {
+      const timer = setTimeout(() => {
+        setShowPopup(false)
+      }, 4000)
+      return () => clearTimeout(timer)
+    }
+  }, [showPopup])
+
+  // Show loading state while auth is being determined
+  if (authLoading || (authUser && !userProfile)) {
+    return (
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-header">
+            <img src="/android/android-launchericon-512-512.png" alt="Gaand" className="login-logo" />
+            <h1 className="login-title">Gaand</h1>
+            <p className="login-subtitle">Loading...</p>
+          </div>
+          <div className="loading-spinner" style={{ margin: '0 auto' }}>
+            <div className="spinner"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Launch skeleton: if no auth or profile yet, show a minimal full-screen loader to avoid black frame
   if (!authUser) {
@@ -210,15 +236,6 @@ function App() {
       </div>
     )
   }
-
-  useEffect(() => {
-    if (userProfile) {
-      setEditForm({
-        username: userProfile.username || '',
-        photoURL: userProfile.photoURL || '👤'
-      })
-    }
-  }, [userProfile])
 
   const handleSearchUsers = async () => {
     if (!searchQuery.trim()) {
@@ -375,16 +392,6 @@ function App() {
     }, 3000)
   }
 
-  // Auto-hide popup after 4 seconds
-  useEffect(() => {
-    if (showPopup) {
-      const timer = setTimeout(() => {
-        setShowPopup(false)
-      }, 4000)
-      return () => clearTimeout(timer)
-    }
-  }, [showPopup])
-
   const handleProfileToggle = () => {
     setShowProfile(!showProfile)
   }
@@ -461,16 +468,16 @@ function App() {
     )
   }
 
-  if (authUser && !userProfile) {
+  if (!userProfile) {
     return (
       <div className="login-container">
         <div className="login-card">
           <div className="login-header">
             <img src="/android/android-launchericon-512-512.png" alt="Gaand" className="login-logo" />
             <h1 className="login-title">Gaand</h1>
-            <p className="login-subtitle">Loading profile…</p>
+            <p className="login-subtitle">Preparing your feed…</p>
           </div>
-          <div className="loading-spinner" style={{ margin: '12px auto' }}>
+          <div className="loading-spinner" style={{ margin: '0 auto' }}>
             <div className="spinner"></div>
           </div>
         </div>

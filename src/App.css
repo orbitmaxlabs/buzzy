@@ -1534,12 +1534,17 @@ body {
 
 /* Login Screen Styles */
 .login-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
   background: #000000;
   padding: 20px;
+  z-index: 1;
 }
 
 .login-card {
@@ -2345,7 +2350,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
-  animation: slideUp 0.3s ease-out;
+  animation: slideUpPopup 0.3s ease-out;
 }
 
 .popup {
@@ -2391,7 +2396,7 @@ body {
   line-height: 1.4;
 }
 
-@keyframes slideUp {
+@keyframes slideUpPopup {
   from {
     opacity: 0;
     transform: translateX(-50%) translateY(20px);

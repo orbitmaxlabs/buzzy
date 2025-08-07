@@ -29,6 +29,16 @@ class OfflineFirebase {
     try {
       await offlineStorage.initialize();
       console.log('✅ OfflineFirebase initialized successfully');
+      // Warm caches for faster first-paint
+      setTimeout(async () => {
+        try {
+          const uid = window.__currentAuthUserUid || null;
+          if (uid) {
+            await offlineStorage.getCachedFriends(uid);
+            await offlineStorage.getCachedFriendRequests(uid);
+          }
+        } catch (_) {}
+      }, 250);
     } catch (error) {
       console.error('❌ Failed to initialize OfflineFirebase:', error);
       throw error;

@@ -48,12 +48,10 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user)
+      // Expose uid for early cache warm-up
+      try { window.__currentAuthUserUid = user?.uid || null } catch (_) {}
       if (user) {
         try {
-          // Reveal UI right after sign-in so the app can show a loading screen
-          if (window.__removeSplash) {
-            try { window.__removeSplash() } catch (_) {}
-          }
           // Fetch or create user profile
           let profile = await getUserProfile(user.uid)
           if (!profile) {
@@ -75,16 +73,8 @@ export function AuthProvider({ children }) {
         }
       } else {
         setUserProfile(null)
-        // If unauthenticated, ensure splash is removed (login screen will render)
-        if (window.__removeSplash) {
-          try { window.__removeSplash() } catch (_) {}
-        }
       }
       setLoading(false)
-      // Ensure splash removed once auth state is resolved
-      if (window.__removeSplash) {
-        try { window.__removeSplash() } catch (_) {}
-      }
     })
 
     return unsubscribe
@@ -95,7 +85,8 @@ export function AuthProvider({ children }) {
     userProfile,
     signInWithGoogle,
     logout,
-    updateProfile
+    updateProfile,
+    loading
   }
 
   return (
