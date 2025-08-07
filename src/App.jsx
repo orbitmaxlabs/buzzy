@@ -3,7 +3,7 @@ import './App.css'
 import { useAuth } from './contexts/AuthContext.jsx'
 import NotificationBell from './components/NotificationBell.jsx'
 import PWAInstallPrompt from './components/PWAInstallPrompt.jsx'
-import NotificationTest from './components/NotificationTest.jsx'
+
 import { 
   searchUsersByUsername, 
   sendFriendRequest, 
@@ -13,21 +13,34 @@ import {
   addFriend, 
   migrateUserData,
   cleanupDuplicateFriends,
-  sendNotificationToUser
+  sendNotificationToUser,
+  checkUserNotificationStatus,
+  setupUserNotifications,
+  getNotificationToken,
+  saveNotificationToken
 } from './firebase.js'
 import {
   sendFriendRequestNotification,
   sendFriendAddedNotification
 } from './utils/notificationUtils.js'
 import { initializePWA } from './utils/pwaUtils.js'
+import offlineFirebase from './utils/offlineFirebase.js'
+import OfflineIndicator from './components/OfflineIndicator.jsx'
+import OfflineBanner from './components/OfflineBanner.jsx'
+import { getRandomHindiMessage } from './utils/hindiMessages.js'
 
 function App() {
   const { currentUser: authUser, userProfile, signInWithGoogle, logout: authLogout, updateProfile } = useAuth()
 
+  // State for friend card interactions
+  const [friendCardStates, setFriendCardStates] = useState({})
+  const [showPopup, setShowPopup] = useState(false)
+  const [popupMessage, setPopupMessage] = useState({ type: '', title: '', body: '' })
+
   // Move these here so they're defined before useEffect
   const loadFriends = useCallback(async () => {
     try {
-      const friendsList = await getFriends(authUser.uid)
+      const friendsList = await offlineFirebase.getFriends(authUser.uid)
       setFriends(friendsList)
     } catch (error) {
       console.error('Error loading friends:', error)
@@ -36,10 +49,52 @@ function App() {
 
   const loadFriendRequests = useCallback(async () => {
     try {
-      const requests = await getFriendRequests(authUser.uid)
+      const requests = await offlineFirebase.getFriendRequests(authUser.uid)
       setFriendRequests(requests)
     } catch (error) {
       console.error('Error loading friend requests:', error)
+    }
+  }, [authUser])
+
+  // Automatic notification setup function
+  const setupNotificationsAutomatically = useCallback(async () => {
+    if (!authUser) return
+
+    try {
+      console.log('🔔 Starting automatic notification setup...')
+      
+      // Check current notification status
+      const status = await checkUserNotificationStatus(authUser.uid)
+      console.log('📊 Current notification status:', status)
+      
+      // Check if we need to request permission
+      if (Notification.permission === 'default') {
+        console.log('🔔 Requesting notification permission...')
+        const permission = await Notification.requestPermission()
+        if (permission !== 'granted') {
+          console.log('❌ Notification permission denied by user')
+          return
+        }
+      }
+      
+      // Check if we need to generate/update token
+      if (Notification.permission === 'granted') {
+        try {
+          const currentToken = await getNotificationToken()
+          
+          // Check if token has changed or doesn't exist in DB
+          if (!status.hasToken || status.lastUpdate) {
+            console.log('🔄 Token needs to be updated, saving to database...')
+            await saveNotificationToken(authUser.uid, currentToken)
+            console.log('✅ Token saved successfully')
+          }
+        } catch (tokenError) {
+          console.error('❌ Error generating/saving token:', tokenError)
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in automatic notification setup:', error)
     }
   }, [authUser])
 
@@ -53,9 +108,22 @@ function App() {
   const [editingProfile, setEditingProfile] = useState(false)
   const [editForm, setEditForm] = useState({ username: '', photoURL: '' })
   const [showProfile, setShowProfile] = useState(false)
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false)
 
   useEffect(() => {
     initializePWA().catch(error => console.error('PWA initialization error:', error))
+    
+    // Initialize offline storage
+    const initOfflineStorage = async () => {
+      try {
+        await offlineFirebase.initialize()
+        console.log('✅ Offline storage initialized')
+      } catch (error) {
+        console.error('❌ Failed to initialize offline storage:', error)
+      }
+    }
+    
+    initOfflineStorage()
   }, [])
 
   useEffect(() => {
@@ -64,8 +132,20 @@ function App() {
       cleanupDuplicateFriends(authUser.uid)
       loadFriends()
       loadFriendRequests()
+      
+      // Automatically setup notifications
+      setupNotificationsAutomatically()
+      
+      // Show notification prompt for iOS devices if permission is default
+      if (Notification.permission === 'default') {
+        // Delay the prompt to avoid showing it immediately on app load
+        const timer = setTimeout(() => {
+          setShowNotificationPrompt(true)
+        }, 2000)
+        return () => clearTimeout(timer)
+      }
     }
-  }, [authUser, userProfile, loadFriends, loadFriendRequests])
+  }, [authUser, userProfile, loadFriends, loadFriendRequests, setupNotificationsAutomatically])
 
   useEffect(() => {
     if (userProfile) {
@@ -84,7 +164,7 @@ function App() {
 
     setIsSearching(true)
     try {
-      const results = await searchUsersByUsername(searchQuery.trim())
+      const results = await offlineFirebase.searchUsersByUsername(searchQuery.trim())
       if (!Array.isArray(results)) {
         setSearchResults([])
         return
@@ -105,8 +185,13 @@ function App() {
 
   const handleSendFriendRequest = async toUid => {
     try {
-      await sendFriendRequest(authUser.uid, toUid)
-      await sendFriendRequestNotification(userProfile, { uid: toUid })
+      const result = await offlineFirebase.sendFriendRequest(authUser.uid, toUid)
+      
+      // Send notification if online
+      if (result && !result.offline) {
+        await sendFriendRequestNotification(userProfile, { uid: toUid })
+      }
+      
       setSearchResults([])
       setSearchQuery('')
       setShowAddFriends(false)
@@ -117,14 +202,20 @@ function App() {
 
   const handleRespondToRequest = async (requestId, response) => {
     try {
-      await respondToFriendRequest(requestId, response)
+      const result = await offlineFirebase.respondToFriendRequest(requestId, response)
+      
       if (response === 'accepted') {
         const req = friendRequests.find(r => r.id === requestId)
         if (req) {
-          await addFriend(authUser.uid, req.fromUid)
-          await sendFriendAddedNotification(userProfile, req.fromUser)
+          const addResult = await offlineFirebase.addFriend(authUser.uid, req.fromUid)
+          
+          // Send notification if online
+          if (addResult && !addResult.offline) {
+            await sendFriendAddedNotification(userProfile, req.fromUser)
+          }
         }
       }
+      
       await loadFriendRequests()
       await loadFriends()
     } catch (error) {
@@ -133,19 +224,102 @@ function App() {
   }
 
   const handleFriendCardClick = async friend => {
+    // Set loading state for this specific friend card
+    setFriendCardStates(prev => ({
+      ...prev,
+      [friend.uid]: { state: 'loading' }
+    }))
+
     try {
-      const result = await sendNotificationToUser(friend.uid, {
-        title: 'Friend Activity',
-        body: `${userProfile.username} sent you a greeting! 👋`,
+      const randomMessage = getRandomHindiMessage()
+      const result = await offlineFirebase.sendNotificationToUser(friend.uid, {
+        title: userProfile.username,
+        body: randomMessage,
         data: { type: 'greeting', fromUid: authUser.uid, fromUsername: userProfile.username }
       })
-      console.log(result.success
-        ? `✅ Notification sent to ${friend.username}`
-        : `❌ Notification failed: ${result.message}`)
+      
+      if (result && result.offline) {
+        console.log(`📝 Greeting queued for offline sync to ${friend.username}`)
+        // Show success state for offline queuing
+        setFriendCardStates(prev => ({
+          ...prev,
+          [friend.uid]: { state: 'success' }
+        }))
+        
+        // Show popup for offline queuing
+        setPopupMessage({
+          type: 'success',
+          title: 'Greeting Queued',
+          body: `Greeting sent to ${friend.username} (will be delivered when online): ${randomMessage}`
+        })
+        setShowPopup(true)
+      } else if (result && result.success) {
+        console.log(`✅ Notification sent to ${friend.username}`)
+        // Show success state
+        setFriendCardStates(prev => ({
+          ...prev,
+          [friend.uid]: { state: 'success' }
+        }))
+        
+        // Show success popup
+        setPopupMessage({
+          type: 'success',
+          title: 'Greeting Sent!',
+          body: `Greeting sent to ${friend.username}: ${randomMessage}`
+        })
+        setShowPopup(true)
+      } else {
+        console.log(`❌ Notification failed: ${result.message}`)
+        // Show error state
+        setFriendCardStates(prev => ({
+          ...prev,
+          [friend.uid]: { state: 'error' }
+        }))
+        
+        // Show error popup
+        setPopupMessage({
+          type: 'error',
+          title: 'Failed to Send',
+          body: `Failed to send greeting to ${friend.username}: ${result.message || 'Unknown error'}`
+        })
+        setShowPopup(true)
+      }
     } catch (error) {
       console.error('Error sending notification:', error)
+      // Show error state
+      setFriendCardStates(prev => ({
+        ...prev,
+        [friend.uid]: { state: 'error' }
+      }))
+      
+      // Show error popup
+      setPopupMessage({
+        type: 'error',
+        title: 'Failed to Send',
+        body: `Failed to send greeting to ${friend.username}: ${error.message || 'Unknown error'}`
+      })
+      setShowPopup(true)
     }
+
+    // Reset the state after 3 seconds
+    setTimeout(() => {
+      setFriendCardStates(prev => {
+        const newState = { ...prev }
+        delete newState[friend.uid]
+        return newState
+      })
+    }, 3000)
   }
+
+  // Auto-hide popup after 4 seconds
+  useEffect(() => {
+    if (showPopup) {
+      const timer = setTimeout(() => {
+        setShowPopup(false)
+      }, 4000)
+      return () => clearTimeout(timer)
+    }
+  }, [showPopup])
 
   const handleProfileToggle = () => {
     setShowProfile(!showProfile)
@@ -155,7 +329,18 @@ function App() {
 
   const handleSaveProfile = async () => {
     try {
-      await updateProfile(editForm)
+      // Remove spaces from username
+      const cleanedUsername = editForm.username.replace(/\s+/g, '')
+      
+      if (cleanedUsername.length < 3) {
+        alert('Username must be at least 3 characters long')
+        return
+      }
+      
+      const result = await offlineFirebase.updateUserProfile(authUser.uid, {
+        ...editForm,
+        username: cleanedUsername
+      })
       setEditingProfile(false)
     } catch (error) {
       console.error('Error updating profile:', error)
@@ -168,6 +353,12 @@ function App() {
       photoURL: userProfile.photoURL || '👤'
     })
     setEditingProfile(false)
+  }
+
+  const handleUsernameChange = (e) => {
+    // Remove spaces from username input
+    const value = e.target.value.replace(/\s+/g, '')
+    setEditForm({ ...editForm, username: value })
   }
 
   const handleLogout = async () => {
@@ -221,6 +412,7 @@ function App() {
 
   return (
     <div className="app">
+      <OfflineBanner />
       {/* Top Bar */}
       <header className="top-bar">
         <div className="top-bar-left">
@@ -230,6 +422,18 @@ function App() {
           </div>
         </div>
         <div className="top-bar-right">
+          {/* Notification Permission Button for iOS */}
+          {Notification.permission === 'default' && (
+            <button
+              onClick={() => setShowNotificationPrompt(true)}
+              className="icon-btn notification-permission-btn"
+              title="Enable Notifications"
+            >
+              <svg className="icon" viewBox="0 0 24 24">
+                <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+              </svg>
+            </button>
+          )}
           <button
             onClick={handleProfileToggle}
             className="icon-btn"
@@ -322,34 +526,44 @@ function App() {
                   </button>
                 </div>
               ) : (
-                friends.map(friend => (
-                  <div
-                    key={friend.uid}
-                    onClick={() => handleFriendCardClick(friend)}
-                    className="friend-card"
-                  >
-                    <div className="friend-avatar">
-                      <div className="avatar-emoji">
-                        {friend.photoURL || '👤'}
+                friends.map(friend => {
+                  const cardState = friendCardStates[friend.uid]
+                  return (
+                    <div
+                      key={friend.uid}
+                      onClick={() => handleFriendCardClick(friend)}
+                      className={`friend-card ${cardState ? cardState.state : ''}`}
+                    >
+                      <div className="friend-avatar">
+                        <div className="avatar-emoji">
+                          {friend.photoURL || '👤'}
+                        </div>
+                        {cardState && (
+                          <div className={`card-status ${cardState.state}`}>
+                            {cardState.state === 'loading' && (
+                              <div className="loading-spinner">
+                                <div className="spinner"></div>
+                              </div>
+                            )}
+                            {cardState.state === 'success' && (
+                              <div className="success-tick">✓</div>
+                            )}
+                            {cardState.state === 'error' && (
+                              <div className="error-tick">✕</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="friend-info">
+                        <h3 className="friend-name">{friend.username}</h3>
                       </div>
                     </div>
-                    <div className="friend-info">
-                      <h3 className="friend-name">{friend.username}</h3>
-                    </div>
-                  </div>
-                ))
+                  )
+                })
               )}
             </div>
 
-            {/* Bottom Buttons */}
-            <div className="bottom-buttons">
-              <button className="test-token-btn">
-                Test Token
-              </button>
-              <button className="full-setup-btn">
-                Full Setup
-              </button>
-            </div>
+
           </div>
         ) : (
           <div className="profile-page">
@@ -359,13 +573,6 @@ function App() {
                 <div className="avatar-emoji large">
                   {userProfile.photoURL || '👤'}
                 </div>
-                {editingProfile && (
-                  <button className="edit-avatar-btn">
-                    <svg className="icon" viewBox="0 0 24 24">
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                    </svg>
-                  </button>
-                )}
               </div>
               <div className="profile-info">
                 <div className="profile-name-container">
@@ -374,22 +581,15 @@ function App() {
                       <input
                         type="text"
                         value={editForm.username}
-                        onChange={e =>
-                          setEditForm({ ...editForm, username: e.target.value })
-                        }
+                        onChange={handleUsernameChange}
+                        placeholder="Enter username (no spaces)"
                         className="edit-input"
+                        maxLength="20"
                       />
                     ) : (
                       userProfile.username
                     )}
                   </h2>
-                  {editingProfile && (
-                    <button className="edit-name-btn">
-                      <svg className="icon" viewBox="0 0 24 24">
-                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                      </svg>
-                    </button>
-                  )}
                 </div>
                 <p className="profile-email">{userProfile.email}</p>
                 {!editingProfile && (
@@ -397,7 +597,7 @@ function App() {
                     onClick={handleEditProfile}
                     className="edit-profile-btn"
                   >
-                    Edit Profile
+                    Edit Username
                   </button>
                 )}
                 {editingProfile && (
@@ -435,6 +635,7 @@ function App() {
                 <button
                   onClick={handleAddFriends}
                   className="add-friends-btn"
+                  title="Add Friends"
                 >
                   <svg className="icon" viewBox="0 0 24 24">
                     <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -453,7 +654,10 @@ function App() {
                       <h3 className="friend-name">{friend.username}</h3>
                       <p className="friend-status">Online</p>
                     </div>
-                    <button className="remove-friend-btn">
+                    <button 
+                      className="remove-friend-btn"
+                      title="Remove Friend"
+                    >
                       <svg className="icon" viewBox="0 0 24 24">
                         <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                       </svg>
@@ -525,7 +729,59 @@ function App() {
       </main>
 
       <PWAInstallPrompt />
-      <NotificationTest />
+      <OfflineIndicator />
+      
+      {/* Notification Permission Prompt */}
+      {showNotificationPrompt && (
+        <div className="notification-prompt-overlay">
+          <div className="notification-prompt">
+            <div className="notification-prompt-header">
+              <svg className="notification-icon" viewBox="0 0 24 24">
+                <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+              </svg>
+              <h3>Enable Notifications</h3>
+            </div>
+            <p className="notification-prompt-text">
+              Stay connected with your friends! Get notified when they send you messages or friend requests.
+            </p>
+            <div className="notification-prompt-actions">
+              <button
+                onClick={async () => {
+                  try {
+                    const permission = await Notification.requestPermission()
+                    if (permission === 'granted') {
+                      await setupNotificationsAutomatically()
+                    }
+                    setShowNotificationPrompt(false)
+                  } catch (error) {
+                    console.error('Error requesting notification permission:', error)
+                    setShowNotificationPrompt(false)
+                  }
+                }}
+                className="notification-allow-btn"
+              >
+                Allow Notifications
+              </button>
+              <button
+                onClick={() => setShowNotificationPrompt(false)}
+                className="notification-dismiss-btn"
+              >
+                Not Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup for notifications */}
+      {showPopup && (
+        <div className="popup-overlay">
+          <div className={`popup ${popupMessage.type}`}>
+            <h3>{popupMessage.title}</h3>
+            <p>{popupMessage.body}</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

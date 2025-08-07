@@ -1,4 +1,5 @@
 import { sendNotificationToUser } from '../firebase';
+import { getRandomHindiMessage } from './hindiMessages.js';
 
 export const sendWelcomeNotification = async (userId, username) => {
   try {
@@ -50,6 +51,21 @@ export const sendFriendAddedNotification = async (fromUser, toUser) => {
       data: { type: 'friend_added', fromUid: fromUser.uid, fromUsername: fromUser.username }
     };
     const result = await sendNotificationToUser(toUser.uid, notification);
+    return result.success ? { success: true } : { success: false, message: result.message };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+export const sendMessageNotification = async (fromUser, toUid, message) => {
+  try {
+    const randomMessage = getRandomHindiMessage();
+    const notification = {
+      title: fromUser.username,
+      body: randomMessage,
+      data: { type: 'message', fromUid: fromUser.uid, fromUsername: fromUser.username, originalMessage: message }
+    };
+    const result = await sendNotificationToUser(toUid, notification);
     return result.success ? { success: true } : { success: false, message: result.message };
   } catch (error) {
     return { success: false, message: error.message };

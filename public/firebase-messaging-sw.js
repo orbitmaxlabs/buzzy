@@ -99,16 +99,64 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
       self.clients.claim(),
-      // (Optional) Clean up old caches
+      // Clean up old caches
       caches.keys().then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== 'buzzy-cache-v1')
+            .filter((key) => key !== 'buzzy-cache-v1' && key !== 'buzzy-offline-v1')
             .map((key) => caches.delete(key))
         )
       )
     ])
   );
+});
+
+// Enhanced fetch handler for offline support
+self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Skip Firebase-specific requests (they have their own caching)
+  if (event.request.url.includes('firebase') || 
+      event.request.url.includes('googleapis') ||
+      event.request.url.includes('gstatic')) {
+    return;
+  }
+
+  // Handle app shell and static assets
+  if (event.request.destination === 'document' || 
+      event.request.destination === 'script' ||
+      event.request.destination === 'style' ||
+      event.request.destination === 'image') {
+    
+    event.respondWith(
+      caches.open('buzzy-offline-v1').then((cache) => {
+        return cache.match(event.request).then((response) => {
+          if (response) {
+            // Return cached version
+            return response;
+          }
+          
+          // Fetch from network and cache
+          return fetch(event.request).then((networkResponse) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          }).catch(() => {
+            // Return offline fallback for HTML requests
+            if (event.request.destination === 'document') {
+              return cache.match('/index.html');
+            }
+            return new Response('Offline content not available', {
+              status: 503,
+              statusText: 'Service Unavailable'
+            });
+          });
+        });
+      })
+    );
+  }
 });
 
 // Optional: handle raw push events
