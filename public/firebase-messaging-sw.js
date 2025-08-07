@@ -30,7 +30,7 @@ const messaging = firebase.messaging();
 // Handle background messages (data-only payloads supported)
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message', payload);
-  const title = payload.data?.title || payload.notification?.title || 'Buzzy Notification';
+  const title = payload.data?.title || payload.notification?.title || 'Gaand Notification';
   const body = payload.data?.body || payload.notification?.body || '';
   const icon = '/android/android-launchericon-192-192.png';
   const badge = '/android/android-launchericon-48-48.png';

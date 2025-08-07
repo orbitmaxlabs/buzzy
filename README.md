@@ -1,4 +1,4 @@
-# Buzzy - Social Friend Management App
+# Gaand - Social Friend Management App
 
 A modern, responsive web application for managing friends and social connections, built with React, Vite, and Firebase.
 

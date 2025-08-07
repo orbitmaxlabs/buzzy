@@ -227,10 +227,10 @@ exports.sendNotificationToMultiple = onRequest({ maxInstances: 10 }, async (req,
 // Health check endpoint
 exports.health = onRequest({ maxInstances: 5 }, (req, res) => {
   return cors(req, res, () => {
-    res.json({ 
-      status: 'OK', 
-      timestamp: new Date().toISOString(),
-      service: 'Buzzy Notification Functions'
-    });
+      res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        service: 'Gaand Notification Functions'
+      });
   });
 });

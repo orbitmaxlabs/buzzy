@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Buzzy PWA now includes comprehensive offline support, allowing users to use the app even without an internet connection. All user actions are cached locally and synchronized when the connection is restored.
+The Gaand PWA now includes comprehensive offline support, allowing users to use the app even without an internet connection. All user actions are cached locally and synchronized when the connection is restored.
 
 ## Features
 
@@ -36,7 +36,7 @@ The Buzzy PWA now includes comprehensive offline support, allowing users to use 
 ### Storage Layer (IndexedDB)
 ```javascript
 // Database structure
-BuzzyOfflineDB (v1)
+GaandOfflineDB (v1)
 ├── users (cached user profiles)
 ├── friends (cached friends list)
 ├── friendRequests (cached friend requests)
