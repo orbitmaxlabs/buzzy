@@ -6,7 +6,7 @@ import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // Load Firebase configuration from a single shared file
 const firebaseConfig = await fetch('/firebase-config.json').then(res => res.json());
-const vapidKey = firebaseConfig.vapidKey;
+const vapidKey = 'BFLXQcV7JCNgox4GwERkGd1x7FOM2CYRAf1HDh8uOYcKs9bMiywgWEjmcV_fkCSLLiTDgNOAyJdpvufAEvgD6HM';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -334,86 +334,51 @@ export const requestNotificationPermission = async () => {
 export const getNotificationToken = async () => {
   try {
     console.log('🔑 === FCM TOKEN GENERATION START ===');
-    
+
     if (!messaging) {
-      console.log('⚠️ Messaging not initialized, attempting to reinitialize...');
-      try {
-        messaging = getMessaging(app);
-        console.log('✅ Messaging reinitialized successfully');
-      } catch (error) {
-        console.error('❌ Failed to reinitialize Firebase messaging:', error);
-        throw new Error('Firebase messaging not initialized');
-      }
+      console.log('⚠️ Messaging not initialized, reinitializing…');
+      messaging = getMessaging(app);
     }
-    
-    console.log('🔍 Checking browser notification support...');
+
     if (!('Notification' in window)) {
-      console.error('❌ Notifications not supported in this browser');
-      throw new Error('Notifications are not supported in this browser');
+      throw new Error('This browser does not support notifications');
     }
-    
-    console.log('🔍 Checking notification permission...');
     if (Notification.permission === 'denied') {
-      console.error('❌ Notification permission denied');
-      throw new Error('Notification permission is denied. Please enable notifications in your browser settings.');
+      throw new Error('Notification permission denied. Enable it in your browser settings.');
     }
-    
     if (Notification.permission === 'default') {
-      console.log('🔔 Requesting notification permission...');
-      const permission = await Notification.requestPermission();
-      console.log('📱 Permission result:', permission);
-      if (permission !== 'granted') {
-        console.error('❌ Notification permission denied by user');
-        throw new Error('Notification permission denied by user');
+      console.log('🔔 Requesting permission…');
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        throw new Error('User denied notifications');
       }
     }
-    
-    console.log('🔍 Checking service worker support...');
+
     if (!('serviceWorker' in navigator)) {
-      console.error('❌ Service workers not supported');
-      throw new Error('Service workers are not supported in this browser');
+      throw new Error('Service workers not supported');
     }
-    
-    console.log('🔍 Registering service worker...');
-    let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-    if (!registration) {
-      console.log('📝 Service worker not found, registering new one...');
-      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-        scope: '/'
-      });
-      console.log('✅ Service worker registered:', registration);
-    } else {
-      console.log('✅ Service worker already registered:', registration);
-    }
-    
-    console.log('⏳ Waiting for service worker to be ready...');
-    await navigator.serviceWorker.ready;
-    console.log('✅ Service worker is ready');
-    
-    console.log('🔑 Generating FCM token with VAPID key...');
+    console.log('⏳ Waiting for service worker to be ready…');
+    const registration = await navigator.serviceWorker.ready;
+    console.log('✅ Service worker is ready:', registration);
+
+    console.log('🔑 Generating FCM token…');
     const token = await getToken(messaging, {
-      vapidKey: vapidKey,
+      vapidKey,
       serviceWorkerRegistration: registration
     });
-    
     if (!token) {
-      console.error('❌ Failed to generate FCM token - token is null or empty');
-      throw new Error('Failed to generate FCM token - token is null or empty');
+      throw new Error('Failed to generate FCM token (empty)');
     }
-    
-    console.log('✅ FCM token generated successfully:', token.substring(0, 20) + '...');
+
+    console.log('✅ FCM token:', token.substring(0, 20) + '…');
     console.log('🔑 === FCM TOKEN GENERATION COMPLETE ===');
     return token;
   } catch (error) {
     console.error('❌ Error getting notification token:', error);
-    console.error('🔍 Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
     throw error;
   }
 };
+
 
 export const saveNotificationToken = async (uid, token) => {
   try {

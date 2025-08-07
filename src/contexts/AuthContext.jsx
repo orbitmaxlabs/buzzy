@@ -1,12 +1,18 @@
-/* eslint-disable react-refresh/only-export-components */
+// src/contexts/AuthContext.jsx
 import { createContext, useContext, useState, useEffect } from 'react'
-import { 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  signOut, 
-  onAuthStateChanged 
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut as firebaseSignOut,
+  onAuthStateChanged
 } from 'firebase/auth'
-import { auth, createUserProfile, getUserProfile, updateUserProfile, migrateUserData } from '../firebase.js'
+import {
+  auth,
+  createUserProfile,
+  getUserProfile,
+  updateUserProfile,
+  migrateUserData
+} from '../firebase.js'
 import { sendWelcomeNotification } from '../utils/notificationUtils.js'
 
 const AuthContext = createContext()
@@ -20,49 +26,52 @@ export function AuthProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  function signInWithGoogle() {
+  const signInWithGoogle = () => {
     const provider = new GoogleAuthProvider()
     return signInWithPopup(auth, provider)
   }
 
-  function logout() {
-    return signOut(auth)
+  const logout = () => {
+    return firebaseSignOut(auth)
   }
 
-  async function updateProfile(updates) {
-    if (currentUser) {
+  const updateProfile = async (updates) => {
+    if (!currentUser) return
+    try {
       await updateUserProfile(currentUser.uid, updates)
       setUserProfile(prev => ({ ...prev, ...updates }))
+    } catch (err) {
+      console.error('Error updating user profile:', err)
     }
   }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user)
-      
       if (user) {
         try {
-          // Check if user profile exists
+          // Fetch or create user profile
           let profile = await getUserProfile(user.uid)
-          
           if (!profile) {
-            // Create new user profile
             profile = await createUserProfile(user)
-            await sendWelcomeNotification(user.uid, profile.username)
+            // send welcome notification if profile creation succeeded
+            try {
+              await sendWelcomeNotification(user.uid, profile.username)
+            } catch (notifErr) {
+              console.warn('Failed to send welcome notification:', notifErr)
+            }
           } else {
-            // Migrate existing user data
+            // migrate any legacy data, then re-fetch
             await migrateUserData(user.uid)
-            profile = await getUserProfile(user.uid) // Get updated profile
+            profile = await getUserProfile(user.uid)
           }
-          
           setUserProfile(profile)
-        } catch (error) {
-          console.error('Error loading user profile:', error)
+        } catch (err) {
+          console.error('Error loading user profile:', err)
         }
       } else {
         setUserProfile(null)
       }
-      
       setLoading(false)
     })
 
@@ -82,4 +91,4 @@ export function AuthProvider({ children }) {
       {!loading && children}
     </AuthContext.Provider>
   )
-} 
+}
