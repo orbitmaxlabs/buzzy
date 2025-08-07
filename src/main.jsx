@@ -14,3 +14,12 @@ createRoot(document.getElementById('root')).render(
     </AuthProvider>
   </StrictMode>
 );
+
+// Remove splash once app is mounted and first paint is likely done
+window.addEventListener('load', () => {
+  const splash = document.getElementById('splash');
+  if (splash) {
+    // small delay to avoid flash
+    setTimeout(() => splash.remove(), 150);
+  }
+});

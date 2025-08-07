@@ -32,9 +32,36 @@
 
   <!-- SEO: Description -->
   <meta name="description" content="Gaand — Connect with Gandus. Real-time notifications and a slick PWA experience." />
+  <style>
+    /* Minimal splash to avoid blank screen on launch */
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+    }
+    #splash .splash-logo {
+      width: 128px;
+      height: 128px;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+    @media (min-width: 768px) {
+      #splash .splash-logo { width: 160px; height: 160px; }
+    }
+    @media (min-width: 1280px) {
+      #splash .splash-logo { width: 192px; height: 192px; }
+    }
+  </style>
 </head>
 
 <body>
+  <div id="splash">
+    <img src="/android/android-launchericon-512-512.png" alt="Gaand" class="splash-logo" />
+  </div>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>

@@ -1570,6 +1570,12 @@ body {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
+/* Google button icon uses colored paths inside the SVG provided in JSX */
+.google-icon {
+  width: 24px;
+  height: 24px;
+}
+
 .login-title {
   font-size: 28px;
   font-weight: 700;
