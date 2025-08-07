@@ -235,12 +235,32 @@ body {
   transform: scale(1.05);
 }
 
-/* Main Content - Perfect solution for all devices */
+/* Main Content */
+.main-content {
+  flex: 1;
+  padding-top: 70px; /* Top bar height */
+  min-height: calc(100vh - 70px);
+  background-color: #000000;
+}
+
+/* Friends Page Layout */
+.friends-page {
+  flex: 1;
+  padding: 24px;
+  padding-top: calc(70px + 24px); /* Top bar height + padding */
+  padding-bottom: calc(80px + 24px); /* Bottom buttons height + padding */
+  overflow-y: auto;
+  min-height: calc(100vh - 70px); /* Ensure full height minus top bar */
+  background: transparent; /* Remove background */
+}
+
+/* Friends Grid */
 .friends-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
   padding: 24px;
+  padding-top: 0;
 }
 
 .friend-card {
@@ -291,6 +311,41 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Bottom Buttons */
+.bottom-buttons {
+  display: flex;
+  gap: 16px;
+  padding: 24px;
+  justify-content: center;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #000000;
+  border-top: 1px solid #333333;
+}
+
+.test-token-btn,
+.full-setup-btn {
+  background-color: #ffffff;
+  color: #000000;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.test-token-btn:hover,
+.full-setup-btn:hover {
+  background-color: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
 }
 
 /* Profile Page */
@@ -362,6 +417,25 @@ body {
   color: #a0a0a0;
   margin: 0;
   font-weight: 500;
+}
+
+.edit-profile-btn {
+  background-color: #ffffff;
+  color: #000000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 12px;
+}
+
+.edit-profile-btn:hover {
+  background-color: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
 }
 
 .edit-avatar-btn,
@@ -508,6 +582,41 @@ body {
   width: 100%;
   border: 1px solid #444444;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 {
+  color: #ffffff;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+}
+
+.modal-close-btn:hover {
+  background-color: #444444;
+  color: #ffffff;
 }
 
 .modal-content h3 {
@@ -1064,9 +1173,13 @@ body {
   
   .friends-grid {
     padding: 20px;
-    padding-top: calc(70px + 20px);
+    padding-top: 0;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 16px;
+  }
+
+  .bottom-buttons {
+    padding: 20px;
   }
 
   .profile-page {
@@ -1130,9 +1243,21 @@ body {
   
   .friends-grid {
     padding: 16px;
-    padding-top: calc(60px + 16px);
+    padding-top: 0;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+  }
+
+  .bottom-buttons {
+    padding: 16px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .test-token-btn,
+  .full-setup-btn {
+    min-width: auto;
+    width: 100%;
   }
   
   .friend-card {
@@ -1314,8 +1439,14 @@ body {
   
   .friends-grid {
     padding: 12px;
-    padding-top: calc(56px + 12px);
+    padding-top: 0;
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .bottom-buttons {
+    padding: 12px;
+    flex-direction: column;
     gap: 10px;
   }
   
@@ -1522,8 +1653,14 @@ body {
   
   .friends-grid {
     padding: 8px;
-    padding-top: calc(52px + 8px);
+    padding-top: 0;
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .bottom-buttons {
+    padding: 8px;
+    flex-direction: column;
     gap: 8px;
   }
   
@@ -1705,7 +1842,11 @@ body {
   }
   
   .friends-grid {
-    padding-top: calc(50px + 24px);
+    padding-top: 0;
+  }
+
+  .bottom-buttons {
+    padding: 16px;
   }
 
   .profile-page {
