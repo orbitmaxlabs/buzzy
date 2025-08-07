@@ -21,98 +21,43 @@ setGlobalOptions({ maxInstances: 10 });
 // CORS middleware
 const cors = require('cors')({ origin: true });
 
-// Helper function to get user's notification token
-const getUserNotificationToken = async (targetUid) => {
-  const db = admin.firestore();
-  
-  // First try to get token from user document
-  const userDoc = await db.collection('users').doc(targetUid).get();
-  if (userDoc.exists) {
-    const userData = userDoc.data();
-    if (userData.notificationToken && userData.notificationEnabled) {
-      return userData.notificationToken;
-    }
-  }
-  
-  // Fallback to notificationTokens collection
-  const tokenDoc = await db.collection('notificationTokens').doc(targetUid).get();
-  if (tokenDoc.exists) {
-    const tokenData = tokenDoc.data();
-    return tokenData.token;
-  }
-  
-  return null;
-};
-
 // Send notification to a single user
 exports.sendNotification = onRequest({ maxInstances: 10 }, async (req, res) => {
   return cors(req, res, async () => {
     try {
       const { targetUid, title, body, data = {} } = req.body;
 
-      logger.info('Received notification request', { targetUid, title, body });
-
       if (!targetUid || !title || !body) {
-        logger.error('Missing required fields', { targetUid, title, body });
-        return res.status(400).json({ 
-          error: 'Missing required fields',
-          success: false 
-        });
+        return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      // Get the user's notification token
-      const token = await getUserNotificationToken(targetUid);
+      // Get the user's notification token from Firestore
+      const db = admin.firestore();
+      const tokenDoc = await db.collection('notificationTokens').doc(targetUid).get();
 
-      if (!token) {
-        logger.warn('User has no notification token', { targetUid });
-        return res.status(404).json({ 
-          error: 'User has no notification token or notifications disabled',
-          success: false,
-          reason: 'no_token'
-        });
+      if (!tokenDoc.exists) {
+        return res.status(404).json({ error: 'User has no notification token' });
       }
 
-      logger.info('Found valid token for user', { targetUid, tokenLength: token.length });
+      const tokenData = tokenDoc.data();
+      const token = tokenData.token;
 
-      // Send the notification with proper structure
+      // Send the notification
       const message = {
         notification: {
-          title: title,
-          body: body,
-          icon: '/android/android-launchericon-192-192.png',
-          badge: '/android/android-launchericon-48-48.png',
-          click_action: 'FLUTTER_NOTIFICATION_CLICK'
+          title,
+          body,
         },
         data: {
           ...data,
           click_action: 'FLUTTER_NOTIFICATION_CLICK',
-          title: title,
-          body: body
         },
-        token: token,
-        android: {
-          priority: 'high',
-          notification: {
-            sound: 'default',
-            channel_id: 'buzzy-notifications',
-            priority: 'high'
-          }
-        },
-        apns: {
-          payload: {
-            aps: {
-              sound: 'default',
-              badge: 1
-            }
-          }
-        }
+        token,
       };
 
-      logger.info('Sending FCM message', { targetUid, messageId: 'pending' });
       const response = await admin.messaging().send(message);
       
-      // Store notification in Firestore for history
-      const db = admin.firestore();
+      // Store notification in Firestore
       await db.collection('notifications').add({
         targetUid,
         title,
@@ -120,51 +65,14 @@ exports.sendNotification = onRequest({ maxInstances: 10 }, async (req, res) => {
         data,
         read: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-        messageId: response
+        sentAt: admin.firestore.FieldValue.serverTimestamp()
       });
 
-      logger.info('Notification sent successfully', { 
-        targetUid, 
-        messageId: response,
-        title,
-        body 
-      });
-      
-      res.json({ 
-        success: true, 
-        messageId: response,
-        title,
-        body
-      });
+      logger.info('Notification sent successfully', { targetUid, messageId: response });
+      res.json({ success: true, messageId: response });
     } catch (error) {
       logger.error('Error sending notification:', error);
-      
-      // Handle specific FCM errors
-      if (error.code === 'messaging/invalid-registration-token' || 
-          error.code === 'messaging/registration-token-not-registered') {
-        logger.warn('Invalid token detected, cleaning up', { targetUid });
-        // Token is invalid, remove it from database
-        try {
-          const db = admin.firestore();
-          await db.collection('users').doc(targetUid).update({
-            notificationToken: null,
-            notificationEnabled: false,
-            lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp()
-          });
-          await db.collection('notificationTokens').doc(targetUid).delete();
-          logger.info('Cleaned up invalid token', { targetUid });
-        } catch (cleanupError) {
-          logger.error('Error cleaning up invalid token:', cleanupError);
-        }
-      }
-      
-      res.status(500).json({ 
-        error: 'Failed to send notification',
-        success: false,
-        reason: error.code || 'unknown_error',
-        details: error.message
-      });
+      res.status(500).json({ error: 'Failed to send notification' });
     }
   });
 });
@@ -185,36 +93,27 @@ exports.sendNotificationToMultiple = onRequest({ maxInstances: 10 }, async (req,
       for (const targetUid of targetUids) {
         try {
           // Get the user's notification token
-          const token = await getUserNotificationToken(targetUid);
+          const tokenDoc = await db.collection('notificationTokens').doc(targetUid).get();
 
-          if (!token) {
+          if (!tokenDoc.exists) {
             results.push({ targetUid, success: false, error: 'No token found' });
             continue;
           }
 
+          const tokenData = tokenDoc.data();
+          const token = tokenData.token;
+
           // Send the notification
           const message = {
             notification: {
-              title: title,
-              body: body,
-              icon: '/android/android-launchericon-192-192.png',
-              badge: '/android/android-launchericon-48-48.png'
+              title,
+              body,
             },
             data: {
               ...data,
               click_action: 'FLUTTER_NOTIFICATION_CLICK',
-              title: title,
-              body: body
             },
-            token: token,
-            android: {
-              priority: 'high',
-              notification: {
-                sound: 'default',
-                channel_id: 'buzzy-notifications',
-                priority: 'high'
-              }
-            }
+            token,
           };
 
           const response = await admin.messaging().send(message);
@@ -227,8 +126,7 @@ exports.sendNotificationToMultiple = onRequest({ maxInstances: 10 }, async (req,
             data,
             read: false,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            sentAt: admin.firestore.FieldValue.serverTimestamp(),
-            messageId: response
+            sentAt: admin.firestore.FieldValue.serverTimestamp()
           });
 
           results.push({ targetUid, success: true, messageId: response });

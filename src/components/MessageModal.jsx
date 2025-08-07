@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { sendMessage } from '../firebase';
-import { sendMessageNotification, sendGreetingNotification } from '../utils/notificationUtils';
+import { sendMessageNotification } from '../utils/notificationUtils';
 import { useAuth } from '../contexts/AuthContext';
 
 const MessageModal = ({ friend, isOpen, onClose }) => {
@@ -36,12 +36,8 @@ const MessageModal = ({ friend, isOpen, onClose }) => {
       await sendMessage(authUser.uid, friend.uid, greetingMessage);
       setDebugInfo('Message sent, sending notification...');
 
-      const notificationResult = await sendGreetingNotification(userProfile, friend.uid);
-      if (notificationResult.success) {
-        setDebugInfo(`✅ Greeting sent successfully! Message: ${notificationResult.message}`);
-      } else {
-        setDebugInfo(`⚠️ Message sent, but notification failed: ${notificationResult.message}`);
-      }
+      await sendMessageNotification(userProfile, friend.uid, greetingMessage);
+      setDebugInfo('✅ Greeting sent successfully!');
       
       // Close modal after 2 seconds
       setTimeout(() => {
