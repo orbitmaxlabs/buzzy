@@ -58,7 +58,7 @@ function App() {
     } catch (error) {
       console.error('Error loading friends:', error)
     } finally {
-      setFriendsLoading(false)
+     setFriendsLoading(false)
     }
   }, [authUser])
 
@@ -200,7 +200,7 @@ function App() {
           <div className="login-header">
             <img src="/android/android-launchericon-512-512.png" alt="Gaand" className="login-logo" />
             <h1 className="login-title">Gaand</h1>
-            <p className="login-subtitle">Loading...</p>
+            <p className="login-subtitle">Loading bhen ke lund...</p>
           </div>
           <div className="loading-spinner" style={{ margin: '0 auto' }}>
             <div className="spinner"></div>
@@ -509,6 +509,19 @@ function App() {
               </svg>
             </button>
           )}
+          {/* Only show logout button when on profile page */}
+          {showProfile && (
+            <button
+              onClick={handleLogout}
+              className="logout-top-btn"
+              title="Logout"
+            >
+              <svg className="icon" viewBox="0 0 24 24">
+                <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+              </svg>
+              <span className="logout-text">Logout</span>
+            </button>
+          )}
           <button
             onClick={handleProfileToggle}
             className="icon-btn"
@@ -586,8 +599,8 @@ function App() {
                       <path d="M12 2a10 10 0 1 0 10 10" />
                     </svg>
                   </div>
-                  <h3 className="empty-title">Loading friends…</h3>
-                  <p className="empty-message">Fetching your latest friend list.</p>
+                  <h3 className="empty-title">Friends list load hori bsdk..</h3>
+                  <p className="empty-message">2 sec lagenge bas MADARCHOD!</p>
                 </div>
               ) : friends.length === 0 ? (
                 <div className="empty-friends">
@@ -607,7 +620,7 @@ function App() {
                     <svg className="icon" viewBox="0 0 24 24">
                       <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                     </svg>
-                    Add Friends
+                    Add Gaandus
                   </button>
                 </div>
               ) : (
@@ -702,29 +715,18 @@ function App() {
                   </div>
                 )}
               </div>
-              <button
-                onClick={handleLogout}
-                className="logout-btn"
-              >
-                <svg className="icon" viewBox="0 0 24 24">
-                  <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-                </svg>
-                Logout
-              </button>
             </div>
 
             {/* Friends List */}
             <div className="friends-section">
               <div className="section-header">
-                <h2 className="section-title">Friends ({friends.length})</h2>
+                <h2 className="section-title">Gaandus ({friends.length})</h2>
                 <button
                   onClick={handleAddFriends}
                   className="add-friends-btn"
-                  title="Add Friends"
+                  title="Add Gaandus"
                 >
-                  <svg className="icon" viewBox="0 0 24 24">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                  </svg>
+                  Add Gaandus
                 </button>
               </div>
               <div className="friends-list">
@@ -743,9 +745,7 @@ function App() {
                       className="remove-friend-btn"
                       title="Remove Friend"
                     >
-                      <svg className="icon" viewBox="0 0 24 24">
-                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                      </svg>
+                      Remove
                     </button>
                   </div>
                 ))}
@@ -759,7 +759,7 @@ function App() {
           <div className="add-friends-modal">
             <div className="modal-content">
               <div className="modal-header">
-                <h3>Add Friends</h3>
+                <h3>Add Gaandus</h3>
                 <button
                   onClick={() => setShowAddFriends(false)}
                   className="modal-close-btn"
